@@ -55,7 +55,7 @@ def callback():
 def handle_text_message(event):
   user_id = event.source.user_id
   text = event.message.text.strip()
-  logger.info(f'{user_id}: {text}')
+  # logger.info(f'{user_id}: {text}')
   if user_id not in model_management:
     model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
   
