@@ -1,9 +1,12 @@
 from dotenv import load_dotenv
 from flask import Flask, request, abort
-from linebot import (LineBotApi, WebhookHandler)
-from linebot.exceptions import (InvalidSignatureError)
-from linebot.models import (MessageEvent, TextMessage, TextSendMessage,
-                            ImageSendMessage, AudioMessage)
+from linebot.v3 import (WebhookHandler)
+from linebot.v3.exceptions import (InvalidSignatureError)
+from linebot.v3.messaging import (Configuration, ApiClient, MessagingApi,
+                                  ReplyMessageRequest, TextMessage,
+                                  ImageMessage, MessagingApiBlob)
+from linebot.v3.webhooks import (MessageEvent, TextMessageContent,
+                                 AudioMessageContent)
 import os
 import uuid
 
@@ -19,7 +22,9 @@ from src.mongodb import mongodb
 load_dotenv('.env')
 
 app = Flask(__name__)
-line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+configuration = Configuration(access_token=os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+line_bot_api = MessagingApi(ApiClient(configuration))
+blob_api = MessagingApiBlob(ApiClient(configuration))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 storage = None
 youtube = Youtube(step=4)
@@ -46,34 +51,17 @@ def callback():
   return 'OK'
 
 
-@handler.add(MessageEvent, message=TextMessage)
+@handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
   user_id = event.source.user_id
   text = event.message.text.strip()
   logger.info(f'{user_id}: {text}')
-
+  if user_id not in model_management:
+    model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
+  
   try:
-    if text.startswith('/註冊'):
-      api_key = text[3:].strip()
-      model = OpenAIModel(api_key=api_key)
-      is_successful, _, _ = model.check_token_valid()
-      if not is_successful:
-        raise ValueError('Invalid API token')
-      model_management[user_id] = model
-      storage.save({user_id: api_key})
-      msg = TextSendMessage(text='Token 有效，註冊成功')
-    elif text.startswith('/我沒有KEY讓我白嫖'):
-      # api_key = text[3:].strip()
-      api_key = os.getenv('OPENAI_API_KEY')
-      model = OpenAIModel(api_key=api_key)
-      is_successful, _, _ = model.check_token_valid()
-      if not is_successful:
-        raise ValueError('Invalid API token')
-      model_management[user_id] = model
-      storage.save({user_id: api_key})
-      msg = TextSendMessage(text='Token 有效，註冊成功')
-    elif text.startswith('/help'):
-      msg = TextSendMessage(text="""指令：
+    if text.startswith('/help'):
+      msg = TextMessage(text="""指令：
 /註冊 + API Token
 👉 API Token 請先到 https://platform.openai.com/ 註冊登入後取得\n
 /系統訊息 + Prompt
@@ -92,11 +80,11 @@ def handle_text_message(event):
 
     elif text.startswith('/系統訊息'):
       memory.change_system_message(user_id, text[5:].strip())
-      msg = TextSendMessage(text='輸入成功')
+      msg = TextMessage(text='輸入成功')
 
     elif text.startswith('忘記'):
       memory.remove(user_id)
-      msg = TextSendMessage(text='歷史訊息清除成功')
+      msg = TextMessage(text='歷史訊息清除成功')
 
     elif text.startswith('圖像'):
       prompt = text[3:].strip()
@@ -106,7 +94,7 @@ def handle_text_message(event):
       if not is_successful:
         raise Exception(error_message)
       url = response['data'][0]['url']
-      msg = ImageSendMessage(original_content_url=url, preview_image_url=url)
+      msg = ImageMessage(original_content_url=url, preview_image_url=url)
       memory.append(user_id, 'assistant', url)
 
     else:
@@ -126,81 +114,81 @@ def handle_text_message(event):
           if not is_successful:
             raise Exception(error_message)
           role, response = get_role_and_content(response)
-          msg = TextSendMessage(text=response)
+          msg = TextMessage(text=response)
         else:
           chunks = website.get_content_from_url(url)
           if len(chunks) == 0:
             raise Exception('無法撈取此網站文字')
-          website_reader = WebsiteReader(user_model,
-                                         os.getenv('OPENAI_MODEL_ENGINE'))
+          website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE'))
           is_successful, response, error_message = website_reader.summarize(
             chunks)
           if not is_successful:
             raise Exception(error_message)
           role, response = get_role_and_content(response)
-          msg = TextSendMessage(text=response)
+          msg = TextMessage(text=response)
       else:
         is_successful, response, error_message = user_model.chat_completions(
           memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
         if not is_successful:
           raise Exception(error_message)
         role, response = get_role_and_content(response)
-        msg = TextSendMessage(text=response)
+        msg = TextMessage(text=response)
 
       memory.append(user_id, role, response)
   except ValueError:
-    msg = TextSendMessage(text='Token 無效，請重新註冊，格式為 /註冊 sk-xxxxx')
+    msg = TextMessage(text='Token 無效，請重新註冊，格式為 /註冊 sk-xxxxx')
   except KeyError:
-    # msg = TextSendMessage(text='請先註冊 Token，格式為 /註冊 sk-xxxxx')
-    msg = TextSendMessage(text='請先註冊 Token，格式為 /註冊')
+    msg = TextMessage(text='請先註冊 Token，格式為 /註冊')
   except Exception as e:
     memory.remove(user_id)
     if str(e).startswith('Incorrect API key provided'):
-      msg = TextSendMessage(text='OpenAI API Token 有誤，請重新註冊。')
+      msg = TextMessage(text='OpenAI API Token 有誤，請重新註冊。')
     elif str(e).startswith(
         'That model is currently overloaded with other requests.'):
-      msg = TextSendMessage(text='已超過負荷，請稍後再試')
+      msg = TextMessage(text='已超過負荷，請稍後再試')
     else:
-      msg = TextSendMessage(text=str(e))
-  line_bot_api.reply_message(event.reply_token, msg)
+      msg = TextMessage(text=str(e))
+  line_bot_api.reply_message_with_http_info(
+        ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
 
 
-@handler.add(MessageEvent, message=AudioMessage)
-def handle_audio_message(event):
+@handler.add(MessageEvent, message=AudioMessageContent)
+def handle_audio_message(event:MessageEvent):
   user_id = event.source.user_id
-  audio_content = line_bot_api.get_message_content(event.message.id)
+  if user_id not in model_management:
+    model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
+  audio_content = blob_api.get_message_content(event.message.id)
   input_audio_path = f'{str(uuid.uuid4())}.m4a'
   with open(input_audio_path, 'wb') as fd:
-    for chunk in audio_content.iter_content():
-      fd.write(chunk)
+    # for chunk in audio_content.iter_content():
+      # fd.write(chunk)
+    fd.write(audio_content)
 
   try:
     if not model_management.get(user_id):
       raise ValueError('Invalid API token')
     else:
-      is_successful, response, error_message = model_management[
-        user_id].audio_transcriptions(input_audio_path, 'whisper-1')
+      is_successful, response, error_message = model_management[user_id].audio_transcriptions(input_audio_path, 'whisper-1')
       if not is_successful:
         raise Exception(error_message)
       memory.append(user_id, 'user', response['text'])
-      is_successful, response, error_message = model_management[
-        user_id].chat_completions(memory.get(user_id), 'gpt-3.5-turbo')
+      is_successful, response, error_message = model_management[user_id].chat_completions(memory.get(user_id), 'gpt-3.5-turbo')
       if not is_successful:
         raise Exception(error_message)
       role, response = get_role_and_content(response)
 
       memory.append(user_id, role, response)
-      msg = TextSendMessage(text=response)
+      msg = TextMessage(text=response)
   except ValueError:
-    msg = TextSendMessage(text='請先註冊你的 API Token，格式為 /註冊 [API TOKEN]')
+    msg = TextMessage(text='請先註冊你的 API Token，格式為 /註冊 [API TOKEN]')
   except KeyError:
-    msg = TextSendMessage(text='請先註冊 Token，格式為 /註冊 sk-xxxxx')
+    msg = TextMessage(text='請先註冊 Token，格式為 /註冊 sk-xxxxx')
   except Exception as e:
     memory.remove(user_id)
     if str(e).startswith('Incorrect API key provided'):
-      msg = TextSendMessage(text='OpenAI API Token 有誤，請重新註冊。')
+      msg = TextMessage(text='OpenAI API Token 有誤，請重新註冊。')
     else:
-      msg = TextSendMessage(text=str(e))
+      msg = TextMessage(text=str(e))
   os.remove(input_audio_path)
   line_bot_api.reply_message(event.reply_token, msg)
 
@@ -211,15 +199,15 @@ def home():
 
 
 if __name__ == "__main__":
-  if os.getenv('USE_MONGO'):
-    mongodb.connect_to_database()
-    storage = Storage(MongoStorage(mongodb.db))
-  else:
-    storage = Storage(FileStorage('db.json'))
-  try:
-    data = storage.load()
-    for user_id in data.keys():
-      model_management[user_id] = OpenAIModel(api_key=data[user_id])
-  except FileNotFoundError:
-    pass
+  #if os.getenv('USE_MONGO'):
+  #  mongodb.connect_to_database()
+  #  storage = Storage(MongoStorage(mongodb.db))
+  #else:
+   # storage = Storage(FileStorage('db.json'))
+  #try:
+  #  data = storage.load()
+  #  for user_id in data.keys():
+  #    model_management[user_id] = OpenAIModel(api_key=data[user_id])
+  #except FileNotFoundError:
+  #  pass
   app.run(host='0.0.0.0', port=8080)
