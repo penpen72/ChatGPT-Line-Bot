@@ -27,7 +27,7 @@ line_bot_api = MessagingApi(ApiClient(configuration))
 blob_api = MessagingApiBlob(ApiClient(configuration))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 storage = None
-youtube = Youtube(step=4)
+youtube = Youtube()
 website = Website()
 
 memory = Memory(system_message=os.getenv('SYSTEM_MESSAGE'),
@@ -56,6 +56,7 @@ def handle_text_message(event):
   user_id = event.source.user_id
   text = event.message.text.strip()
   # logger.info(f'{user_id}: {text}')
+  print(f'{user_id}: {text}')
   if user_id not in model_management:
     model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
   
@@ -108,7 +109,7 @@ def handle_text_message(event):
           if not is_successful:
             raise Exception(error_message)
           youtube_transcript_reader = YoutubeTranscriptReader(
-            user_model, os.getenv('OPENAI_MODEL_ENGINE'))
+            user_model, os.getenv('OPENAI_MODEL_ENGINE_2'))
           is_successful, response, error_message = youtube_transcript_reader.summarize(
             chunks)
           if not is_successful:
@@ -119,7 +120,7 @@ def handle_text_message(event):
           chunks = website.get_content_from_url(url)
           if len(chunks) == 0:
             raise Exception('無法撈取此網站文字')
-          website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE'))
+          website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE_2'))
           is_successful, response, error_message = website_reader.summarize(
             chunks)
           if not is_successful:
