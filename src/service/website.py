@@ -36,26 +36,33 @@ class Website:
             return None
 
     def get_content_from_url(self, url: str):
-        hotpage = requests.get(url)
-        soup = BeautifulSoup(hotpage.text, 'html.parser')
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0'}
 
         selectors = {
-            'default': ('article', {}),
-            'site_1': ('div', {'class': 'content'}),
-            'site_2': ('div', {'class': 'ttcl_0 csc-default'})
+        'default': ('article', {}),
+        'content': ('div', {'class': 'content'}),
+        'mobile01': ('div', {'class': 'user-comment-block'}),
+        'notebookcheck': ('div', {'class': 'ttcl_0 csc-default'}),
+        'eprice': ('div', {'class': 'u-gapNextV--lg'}),
+        'news.ebc': ('div', {'class': 'raw-style'}),
+        'chinatimes': ('div', {'class': 'article-body'}), 
+        'toy-people': ('div', {'class': 'card article article-contents'}),
         }
 
-        hotpage = requests.get(url)
+        hotpage = requests.get(url,headers=headers,timeout=10)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
 
         for key, (tag, attrs) in selectors.items():
-            chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
+            chunks = [
+                article.text.strip()
+                for article in soup.find_all(tag, **attrs)
+            ]
             if chunks:
-                # print(f'selectors:{key}')
+                print(f'selectors:{key}')
                 return chunks
                 # break
-        # print('no support')
-        return soup
+        print('no support')
+        return chunks
 
 
 class WebsiteReader:
@@ -66,7 +73,7 @@ class WebsiteReader:
         self.message_format = os.getenv(
             'WEBSITE_MESSAGE_FORMAT') or WEBSITE_MESSAGE_FORMAT
         self.model = model
-        self.text_length_limit = 4800
+        self.text_length_limit = 5000
         self.model_engine = model_engine
 
     def send_msg(self, msg):
