@@ -26,7 +26,6 @@ WEBSITE_MESSAGE_FORMAT = """
 
 
 class Website:
-
     def get_url_from_text(self, text: str):
         url_regex = re.compile(r'^https?://\S+')
         match = re.search(url_regex, text)
@@ -35,33 +34,65 @@ class Website:
         else:
             return None
 
-    def get_content_from_url(self, url: str):
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0'}
+    def get_soup_from_url(self,url: str,headers=None):
+   
+        # headers = ''
+        hotpage = requests.get(url, headers=headers,timeout=10)
+        soup = BeautifulSoup(hotpage.text, 'html.parser')
+        return soup
 
+
+    def get_content_from_url_user_def(self,url: str):
         selectors = {
-        'default': ('article', {}),
-        'content': ('div', {'class': 'content'}),
-        'mobile01': ('div', {'class': 'user-comment-block'}),
-        'notebookcheck': ('div', {'class': 'ttcl_0 csc-default'}),
-        'eprice': ('div', {'class': 'u-gapNextV--lg'}),
-        'news.ebc': ('div', {'class': 'raw-style'}),
-        'chinatimes': ('div', {'class': 'article-body'}), 
-        'toy-people': ('div', {'class': 'card article article-contents'}),
+            'eprice.com': ('default','div', {'class': 'user-comment-block'}),
+            'notebookcheck.net': ('default','div', {'class': 'ttcl_0 csc-default'}),
+            'mobile01.com': ('default','div', {'class': 'u-gapNextV--lg'}),
+            'news.ebc': ('default','div', {'class': 'raw-style'}),
+            'chinatimes.com': ('None','div', {'class': 'article-body'}), 
+            'toy-people.com': ('default','div', {'class': 'card article article-contents'}),
+            'anandtech.com': ('default','div', {'class': 'articleContent'}),
         }
 
-        hotpage = requests.get(url,headers=headers,timeout=10)
-        soup = BeautifulSoup(hotpage.text, 'html.parser')
+        headers = {
+            'default':{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',},
+            'space':'',
+            'None':None,
+            }
 
-        for key, (tag, attrs) in selectors.items():
-            chunks = [
-                article.text.strip()
-                for article in soup.find_all(tag, **attrs)
-            ]
+
+        for key, (head,tag, attrs) in selectors.items():
+            if key in url:
+                soup = self.get_soup_from_url(url,headers=headers[head])
+                chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
+                print(f'selectors:{key}')
+                return chunks
+
+        return []
+
+    def get_content_from_url_common(self,url: str):
+        selectors={
+            'default': ('article', {}),
+            'content': ('div', {'class': 'content'}),
+        }
+
+        soup = self.get_soup_from_url(url)    
+        for key, (tag, attrs) in selectors.items():    
+            chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
             if chunks:
                 print(f'selectors:{key}')
                 return chunks
-                # break
-        print('no support')
+            
+        return chunks    
+
+    def get_content_from_url(self, url: str):
+        chunks = self.get_content_from_url_user_def(url)
+        if chunks:
+            return chunks
+        chunks = self.get_content_from_url_common(url)
+        if chunks:
+            return chunks
+        
+        print(f'No support! {url}')
         return chunks
 
 
