@@ -34,14 +34,42 @@ class Website:
             'None':None,
             }
         self.selectors = {
-            'eprice.com': ('default','div', {'class': 'user-comment-block'}),
-            'gamer.com.tw': ('default','div', {'class': 'GN-lbox3B'}),
-            'notebookcheck.net': ('default','div', {'class': 'ttcl_0 csc-default'}),
-            'mobile01.com': ('default','div', {'class': 'u-gapNextV--lg'}),
-            'news.ebc': ('default','div', {'class': 'raw-style'}),
-            'chinatimes.com': ('None','div', {'class': 'article-body'}), 
-            'toy-people.com': ('default','div', {'class': 'card article article-contents'}),
-            'anandtech.com': ('default','div', {'class': 'articleContent'}),
+            'eprice.com': (
+                'default',
+                'div', {'class': 'user-comment-block'}
+                ),
+            'gamer.com.tw': (
+                'default',
+                'div', {'class': 'GN-lbox3B'}
+                ),
+            'notebookcheck.net': (
+                'default',
+                'div', {'class': 'ttcl_0 csc-default'}
+                ),
+            'mobile01.com': (
+                'default',
+                'div', {'class': 'u-gapNextV--lg'}
+                ),
+            'news.ebc': (
+                'default',
+                'div', {'class': 'raw-style'}
+                ),
+            'chinatimes.com': (
+                'None',
+                'div', {'class': 'article-body'}
+                ), 
+            'toy-people.com': (
+                'default',
+                'div', {'class': 'card article article-contents'}
+                ),
+            'anandtech.com': (
+                'default',
+                'div', {'class': 'articleContent'}
+                ),
+            'bnext.com.tw': (
+                'default',
+                'div',{'class': 'htmlview article-content'}
+                ),
             'judgment.judicial.gov': ('default','div', {'class': 'htmlcontent'}),
         }
         
