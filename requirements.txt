@@ -1,4 +1,4 @@
-line-bot-sdk>=2.4.1
+line-bot-sdk>=3.5.1
 python-dotenv>=1.0.0
 Flask>=3.0.0
 opencc-python-reimplemented>=0.1.7
