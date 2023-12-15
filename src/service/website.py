@@ -26,6 +26,25 @@ WEBSITE_MESSAGE_FORMAT = """
 
 
 class Website:
+    def __init__(self) -> None:
+        self.headers = {
+            'default':{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',},
+            'zh-TW':{'Accept-Language':'zh-TW,en-US;q=0.8,en;q=0.5,ja;q=0.3'},
+            'space':'',
+            'None':None,
+            }
+        self.selectors = {
+            'eprice.com': ('default','div', {'class': 'user-comment-block'}),
+            'gamer.com.tw': ('default','div', {'class': 'GN-lbox3B'}),
+            'notebookcheck.net': ('default','div', {'class': 'ttcl_0 csc-default'}),
+            'mobile01.com': ('default','div', {'class': 'u-gapNextV--lg'}),
+            'news.ebc': ('default','div', {'class': 'raw-style'}),
+            'chinatimes.com': ('None','div', {'class': 'article-body'}), 
+            'toy-people.com': ('default','div', {'class': 'card article article-contents'}),
+            'anandtech.com': ('default','div', {'class': 'articleContent'}),
+            'judgment.judicial.gov': ('default','div', {'class': 'htmlcontent'}),
+        }
+        
     def get_url_from_text(self, text: str):
         url_regex = re.compile(r'^https?://\S+')
         match = re.search(url_regex, text)
@@ -43,23 +62,8 @@ class Website:
 
 
     def get_content_from_url_user_def(self,url: str):
-        selectors = {
-            'eprice.com': ('default','div', {'class': 'user-comment-block'}),
-            'notebookcheck.net': ('default','div', {'class': 'ttcl_0 csc-default'}),
-            'mobile01.com': ('default','div', {'class': 'u-gapNextV--lg'}),
-            'news.ebc': ('default','div', {'class': 'raw-style'}),
-            'chinatimes.com': ('None','div', {'class': 'article-body'}), 
-            'toy-people.com': ('default','div', {'class': 'card article article-contents'}),
-            'anandtech.com': ('default','div', {'class': 'articleContent'}),
-        }
-
-        headers = {
-            'default':{'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',},
-            'space':'',
-            'None':None,
-            }
-
-
+        headers = self.headers
+        selectors = self.selectors
         for key, (head,tag, attrs) in selectors.items():
             if key in url:
                 soup = self.get_soup_from_url(url,headers=headers[head])
