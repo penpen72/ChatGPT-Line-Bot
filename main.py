@@ -12,7 +12,7 @@ import uuid
 
 from src.models import OpenAIModel
 from src.memory import Memory
-from src.logger import logger
+# from src.logger import logger
 from src.storage import Storage, FileStorage, MongoStorage
 from src.utils import get_role_and_content
 from src.service.youtube import Youtube, YoutubeTranscriptReader
