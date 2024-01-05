@@ -1,18 +1,8 @@
 {
-    "version": 2,
-    "builds": [
+    "rewrites": [
         {
-            "src": "main.py",
-            "use": "@vercel/python",
-            "config": {
-                "runtime": "python3.10"
-            }
-        }
-    ],
-    "routes": [
-        {
-            "src": "/.*",
-            "dest": "main.py"
+            "source": "/(.*)",
+            "destination": "main.py"
         }
     ]
 }
