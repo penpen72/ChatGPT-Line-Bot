@@ -25,7 +25,7 @@ app = Flask(__name__)
 configuration = Configuration(access_token=os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 line_bot_api = MessagingApi(ApiClient(configuration))
 blob_api = MessagingApiBlob(ApiClient(configuration))
-handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
+line_handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 storage = None
 youtube = Youtube()
 website = Website()
@@ -42,7 +42,7 @@ def callback():
   body = request.get_data(as_text=True)
   app.logger.info("Request body: " + body)
   try:
-    handler.handle(body, signature)
+    line_handler.handle(body, signature)
   except InvalidSignatureError:
     print(
       "Invalid signature. Please check your channel access token/channel secret."
@@ -51,7 +51,7 @@ def callback():
   return 'OK'
 
 
-@handler.add(MessageEvent, message=TextMessageContent)
+@line_handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
   user_id = event.source.user_id
   text = event.message.text.strip()
@@ -153,7 +153,7 @@ def handle_text_message(event):
         ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
 
 
-@handler.add(MessageEvent, message=AudioMessageContent)
+@line_handler.add(MessageEvent, message=AudioMessageContent)
 def handle_audio_message(event:MessageEvent):
   user_id = event.source.user_id
   if user_id not in model_management:
@@ -200,16 +200,5 @@ def home():
 
 
 if __name__ == "__main__":
-  #if os.getenv('USE_MONGO'):
-  #  mongodb.connect_to_database()
-  #  storage = Storage(MongoStorage(mongodb.db))
-  #else:
-   # storage = Storage(FileStorage('db.json'))
-  #try:
-  #  data = storage.load()
-  #  for user_id in data.keys():
-  #    model_management[user_id] = OpenAIModel(api_key=data[user_id])
-  #except FileNotFoundError:
-  #  pass
   port = int(os.environ.get("PORT", 8080))
   app.run(host='0.0.0.0', port=port)
