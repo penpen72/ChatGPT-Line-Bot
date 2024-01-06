@@ -13,7 +13,7 @@ WEBSITE_MESSAGE_FORMAT = """
     請關注幾個點：
     1. 他的主題為何？
     2. 他的重點為何？(至少200字)
-    3. 他獨特的觀點為何？(至少200字)
+    3. 他獨特的觀點為何？(至少100字)
     4. 關鍵字有哪些?(至少3個)
     
 
@@ -84,7 +84,7 @@ class Website:
     def get_soup_from_url(self,url: str,headers=None):
    
         # headers = ''
-        hotpage = requests.get(url, headers=headers,timeout=10)
+        hotpage = requests.get(url, headers=headers,timeout=5)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
         return soup
 
