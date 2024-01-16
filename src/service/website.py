@@ -70,7 +70,13 @@ class Website:
                 'default',
                 'div',{'class': 'htmlview article-content'}
                 ),
-            'judgment.judicial.gov': ('default','div', {'class': 'htmlcontent'}),
+            'judgment.judicial.gov': (
+                'default','div', {'class': 'htmlcontent'}
+                ),
+            'moneyweekly.com.tw': (
+                'default',
+                'div',{'class': 'col-11 py-3 div_Article_Info'}
+            )
         }
         
     def get_url_from_text(self, text: str):
