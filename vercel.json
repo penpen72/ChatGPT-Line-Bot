@@ -13,8 +13,8 @@
         }
     ],
     "functions": {
-        "api/**/*": {
-            "maxDuration": 25
+        "main.py": {
+            "maxDuration": 30
         }
     }
 }
