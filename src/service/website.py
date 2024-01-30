@@ -76,6 +76,10 @@ class Website:
             'moneyweekly.com.tw': (
                 'default',
                 'div',{'class': 'col-11 py-3 div_Article_Info'}
+            ),
+            'corp.mediatek.tw': (
+                'default',
+                'div',{'class': 'news-body'}
             )
         }
         
@@ -121,7 +125,15 @@ class Website:
                 return chunks
             
         return chunks    
+    
+    def get_content_from_url_text(self,url: str):
 
+        soup = self.get_soup_from_url(url)    
+        chunks= [soup.text]
+
+        return chunks
+            
+  
     def get_content_from_url(self, url: str):
         chunks = self.get_content_from_url_user_def(url)
         if chunks:
