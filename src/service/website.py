@@ -94,7 +94,7 @@ class Website:
     def get_soup_from_url(self,url: str,headers=None):
    
         # headers = ''
-        hotpage = requests.get(url, headers=headers,timeout=5)
+        hotpage = requests.get(url, headers=headers,timeout=8)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
         return soup
 
