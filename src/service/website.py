@@ -113,7 +113,7 @@ class Website:
         for key, info in sites_info.items():
             if key in url:
                 headers = info.get('headers')
-                tag ,attrs = info.get('selector')
+                tag ,attrs = info.get('selector',('div', {'class': 'content'}))
                 cookies =  info.get('cookies')
                 soup = self.get_soup_from_url(url,headers=headers,cookies=cookies)
                 chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
@@ -140,14 +140,15 @@ class Website:
     def get_content_from_url_text(self,url: str):
  
         soup = self.get_soup_from_url(url)    
-        chunks= list(soup.text)
+        chunks= [soup.text]
 
         return chunks
     
     def get_content_from_url_text_by_ai(self,url: str):
         url_jina = 'https://r.jina.ai/'
+        print(f'selectors:jina.ai')
         soup = self.get_soup_from_url(url_jina+url)    
-        chunks= list(soup.text)
+        chunks= [soup.text]
 
         return chunks        
   
