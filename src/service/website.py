@@ -127,18 +127,27 @@ class Website:
         return chunks    
     
     def get_content_from_url_text(self,url: str):
-
+ 
         soup = self.get_soup_from_url(url)    
-        chunks= [soup.text]
+        chunks= list(soup.text)
 
         return chunks
-            
+    
+    def get_content_from_url_text_by_ai(self,url: str):
+        url_jina = 'https://r.jina.ai/'
+        soup = self.get_soup_from_url(url_jina+url)    
+        chunks= list(soup.text)
+
+        return chunks        
   
     def get_content_from_url(self, url: str):
         chunks = self.get_content_from_url_user_def(url)
         if chunks:
             return chunks
         chunks = self.get_content_from_url_common(url)
+        if chunks:
+            return chunks
+        chunks = self.get_content_from_url_text_by_ai(url)
         if chunks:
             return chunks
         
