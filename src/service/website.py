@@ -23,6 +23,7 @@ WEBSITE_MESSAGE_FORMAT = """
     - 獨特觀點： '...'
     - 關鍵字: '...'
 """
+DEFAULT_HEADER={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',}
 
 
 class Website:
@@ -33,56 +34,64 @@ class Website:
             'space':'',
             'None':None,
             }
-        self.selectors = {
-            'eprice.com': (
-                'default',
-                'div', {'class': 'user-comment-block'}
-                ),
-            'gamer.com.tw': (
-                'default',
-                'div', {'class': 'GN-lbox3B'}
-                ),
-            'notebookcheck.net': (
-                'default',
-                'div', {'class': 'ttcl_0 csc-default'}
-                ),
-            'mobile01.com': (
-                'default',
-                'div', {'class': 'u-gapNextV--lg'}
-                ),
-            'news.ebc': (
-                'default',
-                'div', {'class': 'raw-style'}
-                ),
-            'chinatimes.com': (
-                'None',
-                'div', {'class': 'article-body'}
-                ), 
-            'toy-people.com': (
-                'default',
-                'div', {'class': 'card article article-contents'}
-                ),
-            'anandtech.com': (
-                'default',
-                'div', {'class': 'articleContent'}
-                ),
-            'bnext.com.tw': (
-                'default',
-                'div',{'class': 'htmlview article-content'}
-                ),
-            'judgment.judicial.gov': (
-                'default','div', {'class': 'htmlcontent'}
-                ),
-            'moneyweekly.com.tw': (
-                'default',
-                'div',{'class': 'col-11 py-3 div_Article_Info'}
-            ),
-            'corp.mediatek.tw': (
-                'default',
-                'div',{'class': 'news-body'}
-            )
+        self.sites_info = {
+            'eprice.com': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'user-comment-block'})
+            },
+            'gamer.com.tw': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'GN-lbox3B'})
+            },
+            'notebookcheck.net': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'ttcl_0 csc-default'})
+            },
+            'mobile01.com': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'u-gapNextV--lg'})
+            },
+            'news.ebc': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'raw-style'})
+            },
+            'chinatimes.com': {
+                'headers': None,
+                'selector': ('div', {'class': 'article-body'})
+            },
+            'toy-people.com': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'card article article-contents'})
+            },
+            'anandtech.com': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'articleContent'})
+            },
+            'bnext.com.tw': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'htmlview article-content'})
+            },
+            'judgment.judicial.gov': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'htmlcontent'})
+            },
+            'moneyweekly.com.tw': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'col-11 py-3 div_Article_Info'})
+            },
+            'corp.mediatek.tw': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'news-body'})
+            },
+            'www.ptt.cc': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'bbs-screen bbs-content'}),
+                'cookies':{'over18':'1'}
+            }
+            
         }
-        
+
+
     def get_url_from_text(self, text: str):
         url_regex = re.compile(r'^https?://\S+')
         match = re.search(url_regex, text)
@@ -91,20 +100,22 @@ class Website:
         else:
             return None
 
-    def get_soup_from_url(self,url: str,headers=None):
+    def get_soup_from_url(self,url: str,headers=None,cookies=None):
    
         # headers = ''
-        hotpage = requests.get(url, headers=headers,timeout=8)
+        hotpage = requests.get(url, headers=headers,cookies=cookies,timeout=8)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
         return soup
 
 
     def get_content_from_url_user_def(self,url: str):
-        headers = self.headers
-        selectors = self.selectors
-        for key, (head,tag, attrs) in selectors.items():
+        sites_info = self.sites_info
+        for key, info in sites_info.items():
             if key in url:
-                soup = self.get_soup_from_url(url,headers=headers[head])
+                headers = info.get('headers')
+                tag ,attrs = info.get('selector')
+                cookies =  info.get('cookies')
+                soup = self.get_soup_from_url(url,headers=headers,cookies=cookies)
                 chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
                 print(f'selectors:{key}')
                 return chunks
