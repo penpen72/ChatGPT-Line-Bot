@@ -24,7 +24,7 @@ WEBSITE_MESSAGE_FORMAT = """
     - 關鍵字: '...'
 """
 DEFAULT_HEADER={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',}
-
+DEFAULT_SELECTOR=('div', {'class': 'content'})
 
 class Website:
     def __init__(self) -> None:
@@ -54,10 +54,6 @@ class Website:
             'news.ebc': {
                 'headers': DEFAULT_HEADER,
                 'selector': ('div', {'class': 'raw-style'})
-            },
-            'chinatimes.com': {
-                'headers': None,
-                'selector': ('div', {'class': 'article-body'})
             },
             'toy-people.com': {
                 'headers': DEFAULT_HEADER,
@@ -100,10 +96,10 @@ class Website:
         else:
             return None
 
-    def get_soup_from_url(self,url: str,headers=None,cookies=None):
+    def get_soup_from_url(self,url: str,**attrs):
    
         # headers = ''
-        hotpage = requests.get(url, headers=headers,cookies=cookies,timeout=8)
+        hotpage = requests.get(url, **attrs)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
         return soup
 
@@ -112,8 +108,8 @@ class Website:
         sites_info = self.sites_info
         for key, info in sites_info.items():
             if key in url:
-                headers = info.get('headers')
-                tag ,attrs = info.get('selector',('div', {'class': 'content'}))
+                headers = info.get('headers',DEFAULT_HEADER)
+                tag ,attrs = info.get('selector',DEFAULT_SELECTOR)
                 cookies =  info.get('cookies')
                 soup = self.get_soup_from_url(url,headers=headers,cookies=cookies)
                 chunks = [article.text.strip() for article in soup.find_all(tag, **attrs)]
