@@ -96,10 +96,10 @@ class Website:
         else:
             return None
 
-    def get_soup_from_url(self,url: str,**attrs):
-   
+    def get_soup_from_url(self,url: str,timeout=8,**attrs):
+        
         # headers = ''
-        hotpage = requests.get(url, **attrs)
+        hotpage = requests.get(url,timeout=timeout, **attrs)
         soup = BeautifulSoup(hotpage.text, 'html.parser')
         return soup
 
@@ -164,7 +164,6 @@ class Website:
 
 
 class WebsiteReader:
-
     def __init__(self, model=None, model_engine=None):
         self.system_message = os.getenv(
             'WEBSITE_SYSTEM_MESSAGE') or WEBSITE_SYSTEM_MESSAGE
