@@ -46,7 +46,7 @@ class OpenAIModel(ModelInterface):
         json_body = {
             'model': model_engine,
             'messages': messages,
-            'max_tokens':1024,
+            'max_tokens':256,
         }
         return self._request('POST', '/chat/completions', body=json_body)
 
