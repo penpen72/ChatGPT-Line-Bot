@@ -18,7 +18,7 @@ class Youtube:
 
     def __init__(self, step=1):
         self.step = step
-        self.chunk_size = 4000
+        self.chunk_size = 8000
 
     def get_transcript_chunks(self, video_id):
         try:
