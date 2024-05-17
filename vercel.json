@@ -1,8 +1,18 @@
 {
-
-    "functions": {
-        "api/*.py": {
-            "maxDuration": 60
+    "version": 2,
+    "builds": [
+        {
+            "src": "main.py",
+            "use": "@now/python",
+            "config":{
+                "maxDuration":60
+            }
         }
-    }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "main.py"
+        }
+    ]
 }
