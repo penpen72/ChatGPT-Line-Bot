@@ -3,9 +3,9 @@
     "builds": [
         {
             "src": "main.py",
-            "use": "@now/python",
-            "config":{
-                "maxDuration":60
+            "use": "@vercel/python",
+            "config": {
+                "maxDuration": 60
             }
         }
     ],
