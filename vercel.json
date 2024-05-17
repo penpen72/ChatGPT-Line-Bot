@@ -13,7 +13,7 @@
         }
     ],
     "functions": {
-        "**/*.py": {
+        "main.py": {
             "maxDuration": 60
         }
     }
