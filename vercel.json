@@ -6,7 +6,7 @@
         }
     ],
     "functions": {
-        "main.py": {
+        "api/main.py": {
             "maxDuration": 60
         }
     }
