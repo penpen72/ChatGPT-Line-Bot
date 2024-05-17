@@ -1,5 +1,5 @@
 {
-    "buildCommand": "python main.py",
+    "buildCommand": "python api/main.py",
     "rewrites": [
         {
             "source": "/(.*)",
