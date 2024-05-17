@@ -7,7 +7,7 @@
         }
     ],
     "functions": {
-        "**/*.py": {
+        "/**/*.py": {
             "maxDuration": 60
         }
     }
