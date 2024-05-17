@@ -96,7 +96,7 @@ class Website:
         else:
             return None
 
-    def get_soup_from_url(self,url: str,timeout=8,**attrs):
+    def get_soup_from_url(self,url: str,timeout=50,**attrs):
         
         # headers = ''
         hotpage = requests.get(url,timeout=timeout, **attrs)
