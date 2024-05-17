@@ -1,5 +1,5 @@
 {
-    "buildCommand": "main.py",
+    "buildCommand": "python main.py",
     "rewrites": [
         {
             "source": "/(.*)",
@@ -7,7 +7,7 @@
         }
     ],
     "functions": {
-        "/**/*.py": {
+        "main.py": {
             "maxDuration": 60
         }
     }
