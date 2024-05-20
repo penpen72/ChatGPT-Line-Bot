@@ -23,7 +23,7 @@ WEBSITE_MESSAGE_FORMAT = """
     - 獨特觀點： '...'
     - 關鍵字: '...'
 """
-DEFAULT_HEADER={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',}
+DEFAULT_HEADER={'User-Agent': r'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',}
 DEFAULT_SELECTOR=('div', {'class': 'content'})
 
 class Website:
@@ -49,7 +49,7 @@ class Website:
             },
             'mobile01.com': {
                 'headers': DEFAULT_HEADER,
-                'selector': ('div', {'class': 'u-gapNextV--lg'})
+                'selector': ('div', {'class': 'articleBody'})
             },
             'news.ebc': {
                 'headers': DEFAULT_HEADER,
@@ -83,6 +83,10 @@ class Website:
                 'headers': DEFAULT_HEADER,
                 'selector': ('div', {'class': 'bbs-screen bbs-content'}),
                 'cookies':{'over18':'1'}
+            },
+            'www.businessweekly.com.tw': {
+                'headers': DEFAULT_HEADER,
+                'selector': ('div', {'class': 'Single-article WebContent'}),
             }
             
         }
