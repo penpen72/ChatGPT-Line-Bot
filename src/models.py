@@ -77,7 +77,7 @@ class OpenAIModel(ModelInterface):
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": image_data,
+                                "url": f'data:image/jpeg;base64,{image_data}',
                                 "detail": "low" # low, high, or auto
                             }
                         },
