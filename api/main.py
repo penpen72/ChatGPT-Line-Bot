@@ -221,6 +221,8 @@ def handle_image_message(event: MessageEvent):
             msg = TextMessage(text='OpenAI API Token 有誤，請重新註冊。')
         else:
             msg = TextMessage(text=str(e))
+    print(f'{response=}')   
+    print(f'{msg=}')        
     line_bot_api.reply_message(event.reply_token, msg)
 
 
