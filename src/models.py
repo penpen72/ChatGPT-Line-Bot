@@ -66,3 +66,33 @@ class OpenAIModel(ModelInterface):
             'quality':"standard"
         }
         return self._request('POST', '/images/generations', body=json_body)
+    
+    def image_recognition(self, image_data: str, model_engine: str = "gpt-4o") -> str:
+        json_body = {
+            "model": model_engine,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_data,
+                                "detail": "low" # low, high, or auto
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "詳細觀察這張圖片上面的所有東西，並說明這張圖片上有什麼或是這張圖片再說什麼"
+                            
+                        }
+                    ]
+                }
+            ],
+            "temperature": 1,
+            "max_tokens": 1024,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }
+
+        return self._request('POST', '/chat/completions', body=json_body)

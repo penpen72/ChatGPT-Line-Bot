@@ -6,9 +6,13 @@ from linebot.v3.messaging import (Configuration, ApiClient, MessagingApi,
                                   ReplyMessageRequest, TextMessage,
                                   ImageMessage, MessagingApiBlob)
 from linebot.v3.webhooks import (MessageEvent, TextMessageContent,
-                                 AudioMessageContent)
+                                 AudioMessageContent, ImageMessageContent)
+
 import os
 import uuid
+import base64
+
+
 
 from src.models import OpenAIModel
 from src.memory import Memory
@@ -109,7 +113,7 @@ def handle_text_message(event):
           if not is_successful:
             raise Exception(error_message)
           youtube_transcript_reader = YoutubeTranscriptReader(
-            user_model, os.getenv('OPENAI_MODEL_ENGINE2'))
+            user_model, os.getenv('OPENAI_MODEL_ENGINE'))
           is_successful, response, error_message = youtube_transcript_reader.summarize(
             chunks)
           if not is_successful:
@@ -120,7 +124,7 @@ def handle_text_message(event):
           chunks = website.get_content_from_url(url)
           if len(chunks) == 0:
             raise Exception('無法撈取此網站文字')
-          website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE2'))
+          website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE'))
           is_successful, response, error_message = website_reader.summarize(
             chunks)
           if not is_successful:
@@ -192,6 +196,36 @@ def handle_audio_message(event:MessageEvent):
       msg = TextMessage(text=str(e))
   os.remove(input_audio_path)
   line_bot_api.reply_message(event.reply_token, msg)
+
+@line_handler.add(MessageEvent, message=ImageMessageContent)
+def handle_image_message(event):
+    user_id = event.source.user_id
+    if user_id not in model_management:
+        model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
+
+    image_content = blob_api.get_message_content(event.message.id)
+    
+    try:
+        # 將圖片轉換為 base64
+        image_data = image_content.read()
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+
+        # 將 base64 圖片傳送給OpenAI進行處理
+        is_successful, response, error_message = model_management[user_id].image_recognition(base64_image, model_engine='gpt-4o')
+        if not is_successful:
+            raise Exception(error_message)
+        
+        memory.append(user_id, 'user', "Uploaded an image")
+        memory.append(user_id, 'assistant', response)
+
+        msg = TextMessage(text=response)
+    except Exception as e:
+        memory.remove(user_id)
+        msg = TextMessage(text=str(e))
+    
+    line_bot_api.reply_message(event.reply_token, msg)
+
+
 
 
 @app.route("/", methods=['GET'])
