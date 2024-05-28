@@ -145,7 +145,7 @@ class OpenAIModel(ModelInterface):
             function_name = tool_call['function']['name']
             print(f"use ext function: {function_name}")
             function_to_call = self.available_functions[function_name]
-            # print(f'{tool_call=}')
+            print(f'{function_to_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
             print(f'{function_args=}')
             function_response = function_to_call(query=function_args.get("query"))
