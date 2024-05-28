@@ -138,11 +138,12 @@ class OpenAIModel(ModelInterface):
 
     def chat_with_ext_second_response(self,messages,response,tool_calls,model_engine):
 
-        response_message= response['choices'][0]['message']
+        response_message = response['choices'][0]['message']
         messages.append(response_message)
         
         for tool_call in tool_calls:
             function_name = tool_call.function.name
+            print(f"use ext function: {function_name}")
             function_to_call = self.available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
             function_response = function_to_call(
