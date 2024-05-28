@@ -103,7 +103,7 @@ class OpenAIModel(ModelInterface):
         return self._request('POST', '/chat/completions', body=json_body)
 
     def search_web(self, query):
-        subscription_key = os.getenv['BING_SEARCH_V7_SUBSCRIPTION_KEY']
+        subscription_key = os.getenv('BING_SEARCH_V7_SUBSCRIPTION_KEY')
         search_url = "https://api.bing.microsoft.com/v7.0/search"
         headers = {"Ocp-Apim-Subscription-Key": subscription_key}
         params = {"q": query, "textDecorations": True, "textFormat": "HTML"}
@@ -145,15 +145,15 @@ class OpenAIModel(ModelInterface):
             function_name = tool_call['function']['name']
             print(f"use ext function: {function_name}")
             function_to_call = self.available_functions[function_name]
-            print(f'{function_to_call=}')
+            # print(f'{function_to_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
-            print(f'{function_args=}')
+            # print(f'{function_args=}')
             function_response = function_to_call(query=function_args.get("query"))
-            print(f'{function_response=}')
+            # print(f'{function_response=}')
             search_summary = ""
             for result in function_response:
                 search_summary += f"- {result['name']}: {result['snippet']} (URL: {result['url']})\n"
-            print(f'{messages=}')
+            # print(f'{messages=}')
             messages.append(
                 {
                     "tool_call_id": tool_call['id'],
