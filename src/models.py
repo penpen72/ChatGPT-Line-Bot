@@ -142,10 +142,10 @@ class OpenAIModel(ModelInterface):
         messages.append(response_message)
         
         for tool_call in tool_calls:
-            function_name = tool_call.function.name
+            function_name = tool_call['function']['name']
             print(f"use ext function: {function_name}")
             function_to_call = self.available_functions[function_name]
-            function_args = json.loads(tool_call.function.arguments)
+            function_args = json.loads(tool_call['function']['arguments'])
             function_response = function_to_call(
                 query=function_args.get("query")
             )
@@ -155,7 +155,7 @@ class OpenAIModel(ModelInterface):
             
             messages.append(
                 {
-                    "tool_call_id": tool_call.id,
+                    "tool_call_id": tool_call['id'],
                     "role": "tool",
                     "name": function_name,
                     "content": search_summary,
