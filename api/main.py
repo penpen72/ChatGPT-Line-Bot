@@ -97,8 +97,8 @@ def handle_text_message(event):
             url = response['data'][0]['url']
             msg = ImageMessage(original_content_url=url, preview_image_url=url)
             memory.append(user_id, 'assistant', url)
-        elif text.startswith('ext'):
-            prompt = text[3:].strip()
+        elif text.lower().startswith('ext'):
+            prompt = text[4:].strip()
             user_model = model_management[user_id]
             memory.append(user_id, 'user', prompt)
             is_successful, response, error_message = user_model.chat_with_ext(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
@@ -109,11 +109,9 @@ def handle_text_message(event):
                 waiting_msg = TextMessage(text='處理中請稍後...')
                 line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[waiting_msg]))
                 is_successful, response, error_message = user_model.chat_with_ext_second_response(memory.get(user_id), response,tool_calls,os.getenv('OPENAI_MODEL_ENGINE'))
-                role, response = get_role_and_content(response)
-                msg = TextMessage(text=response)
-            else:
-                role, response = get_role_and_content(response)
-                msg = TextMessage(text=response)
+
+            role, response = get_role_and_content(response)
+            msg = TextMessage(text=response)
 
             memory.append(user_id, role, response)
         else:
