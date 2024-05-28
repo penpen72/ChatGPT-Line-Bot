@@ -106,6 +106,7 @@ def handle_text_message(event):
             tool_calls = get_tool_calls(response)
             if tool_calls:
                 msg = TextMessage(text='處理中...')
+                line_bot_api.reply_message(ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
                 is_successful, response, error_message = user_model.chat_with_ext_second_response(memory.get(user_id), response,tool_calls,os.getenv('OPENAI_MODEL_ENGINE'))
                 msg = TextMessage(text=response)
             else:
@@ -163,9 +164,7 @@ def handle_text_message(event):
             msg = TextMessage(text='已超過負荷，請稍後再試')
         else:
             msg = TextMessage(text=str(e))
-    line_bot_api.reply_message_with_http_info(
-        ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
-
+    line_bot_api.reply_message_with_http_info(ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
 
 @line_handler.add(MessageEvent, message=AudioMessageContent)
 def handle_audio_message(event: MessageEvent):
