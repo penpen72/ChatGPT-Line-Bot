@@ -147,6 +147,7 @@ class OpenAIModel(ModelInterface):
             function_to_call = self.available_functions[function_name]
             # print(f'{tool_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
+            print(f'{function_args=}')
             function_response = function_to_call(query=function_args.get("query"))
             search_summary = ""
             for result in function_response:
@@ -160,7 +161,7 @@ class OpenAIModel(ModelInterface):
                     "content": search_summary,
                 }
             )
-        print(messages)
+        print(f'{messages=}')
         
         return self.chat_completions(messages=messages, model_engine=model_engine)
            
