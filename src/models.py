@@ -148,7 +148,10 @@ class OpenAIModel(ModelInterface):
             # print(f'{tool_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
             print(f'{function_args=}')
-            function_response = function_to_call(query=function_args.get("query"))
+            try:
+                function_response = function_to_call(query=function_args.get("query"))
+            except:
+                raise
             search_summary = ""
             for result in function_response:
                 search_summary += f"- {result['name']}: {result['snippet']} (URL: {result['url']})\n"
