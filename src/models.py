@@ -148,14 +148,12 @@ class OpenAIModel(ModelInterface):
             # print(f'{tool_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
             print(f'{function_args=}')
-            try:
-                function_response = function_to_call(query=function_args.get("query"))
-            except:
-                raise
+            function_response = function_to_call(query=function_args.get("query"))
+            print(f'{function_response=}')
             search_summary = ""
             for result in function_response:
                 search_summary += f"- {result['name']}: {result['snippet']} (URL: {result['url']})\n"
-            
+            print(f'{messages=}')
             messages.append(
                 {
                     "tool_call_id": tool_call['id'],
@@ -164,7 +162,7 @@ class OpenAIModel(ModelInterface):
                     "content": search_summary,
                 }
             )
-        print(f'{messages=}')
+        
         
         return self.chat_completions(messages=messages, model_engine=model_engine)
            
