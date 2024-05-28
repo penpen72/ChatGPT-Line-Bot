@@ -15,7 +15,7 @@ from src.models import OpenAIModel
 from src.memory import Memory
 # from src.logger import logger
 from src.storage import Storage, FileStorage, MongoStorage
-from src.utils import get_role_and_content
+from src.utils import get_role_and_content,get_tool_calls
 from src.service.youtube import Youtube, YoutubeTranscriptReader
 from src.service.website import Website, WebsiteReader
 from src.mongodb import mongodb
@@ -96,7 +96,23 @@ def handle_text_message(event):
             url = response['data'][0]['url']
             msg = ImageMessage(original_content_url=url, preview_image_url=url)
             memory.append(user_id, 'assistant', url)
+        elif text.startswith('ext'):
+            prompt = text[3:].strip()
+            user_model = model_management[user_id]
+            memory.append(user_id, 'user', prompt)
+            is_successful, response, error_message = user_model.chat_with_ext(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
+            if not is_successful:
+                raise Exception(error_message)
+            tool_calls = get_tool_calls(response)
+            if tool_calls:
+                msg = TextMessage(text='處理中...')
+                is_successful, response, error_message = user_model.chat_with_ext_second_response(memory.get(user_id), response,tool_calls,os.getenv('OPENAI_MODEL_ENGINE'))
+                msg = TextMessage(text=response)
+            else:
+                role, response = get_role_and_content(response)
+                msg = TextMessage(text=response)
 
+            memory.append(user_id, role, response)
         else:
             user_model = model_management[user_id]
             memory.append(user_id, 'user', text)
@@ -127,8 +143,7 @@ def handle_text_message(event):
                     role, response = get_role_and_content(response)
                     msg = TextMessage(text=response)
             else:
-                is_successful, response, error_message = user_model.chat_completions(
-                    memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
+                is_successful, response, error_message = user_model.chat_completions(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
                 if not is_successful:
                     raise Exception(error_message)
                 role, response = get_role_and_content(response)

@@ -1,6 +1,7 @@
 from typing import List, Dict
 import requests
-
+import os
+import json
 
 class ModelInterface:
     def check_token_valid(self) -> bool:
@@ -20,6 +21,9 @@ class OpenAIModel(ModelInterface):
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = 'https://api.openai.com/v1'
+        self.available_functions = {
+            "search_web": self.search_web,
+        }
 
     def _request(self, method, endpoint, body=None, files=None):
         self.headers = {
@@ -42,11 +46,12 @@ class OpenAIModel(ModelInterface):
     def check_token_valid(self):
         return self._request('GET', '/models')
 
-    def chat_completions(self, messages, model_engine) -> str:
+    def chat_completions(self, messages, model_engine,**kargs) -> str:
         json_body = {
             'model': model_engine,
             'messages': messages,
             'max_tokens':1024,
+            **kargs
         }
         return self._request('POST', '/chat/completions', body=json_body)
 
@@ -96,3 +101,68 @@ class OpenAIModel(ModelInterface):
         }
 
         return self._request('POST', '/chat/completions', body=json_body)
+
+    def search_web(self, query):
+        subscription_key = os.environ['BING_SEARCH_V7_SUBSCRIPTION_KEY']
+        search_url = "https://api.bing.microsoft.com/v7.0/search"
+        headers = {"Ocp-Apim-Subscription-Key": subscription_key}
+        params = {"q": query, "textDecorations": True, "textFormat": "HTML"}
+        response = requests.get(search_url, headers=headers, params=params)
+        response.raise_for_status()
+        search_results = response.json()
+        return search_results["webPages"]["value"]
+
+    def chat_with_ext(self, messages, model_engine,**karg):
+ 
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_web",
+                    "description": "Search the web for information",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search query"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+        ]
+        
+        return self.chat_completions(messages=messages, model_engine=model_engine,tools=tools,tool_choice="auto")
+
+    def chat_with_ext_second_response(self,messages,response,tool_calls,model_engine):
+
+        response_message= response['choices'][0]['message']
+        messages.append(response_message)
+        
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_to_call = self.available_functions[function_name]
+            function_args = json.loads(tool_call.function.arguments)
+            function_response = function_to_call(
+                query=function_args.get("query")
+            )
+            search_summary = ""
+            for result in function_response:
+                search_summary += f"- {result['name']}: {result['snippet']} (URL: {result['url']})\n"
+            
+            messages.append(
+                {
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": function_name,
+                    "content": search_summary,
+                }
+            )
+        
+        return self.chat_completions(messages=messages, model_engine=model_engine)
+           
+
+
+
