@@ -160,6 +160,7 @@ class OpenAIModel(ModelInterface):
                     "content": search_summary,
                 }
             )
+        print(messages)
         
         return self.chat_completions(messages=messages, model_engine=model_engine)
            
