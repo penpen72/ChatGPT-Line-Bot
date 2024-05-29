@@ -117,7 +117,7 @@ class OpenAIModel(ModelInterface):
         response.raise_for_status()
         search_results = response.json()
         print(f'{params=}')
-        print(f'{search_results=}')
+        # print(f'{search_results=}')
         return search_results["webPages"]["value"]
 
     def chat_with_ext(self, messages, model_engine,**karg):
