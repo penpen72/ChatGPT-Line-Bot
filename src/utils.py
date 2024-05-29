@@ -11,6 +11,6 @@ def get_role_and_content(response: str):
     return role, content
 
 def get_tool_calls(response: str):
-    tool_calls = response['choices'][0]['message']['tool_calls']
+    tool_calls = response['choices'][0]['message'].get('tool_calls')
     # function_name = [tool_call['function']['name'] for tool_call in tool_calls ]
     return tool_calls
