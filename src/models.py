@@ -102,11 +102,17 @@ class OpenAIModel(ModelInterface):
 
         return self._request('POST', '/chat/completions', body=json_body)
 
-    def search_web(self, query):
+    def search_web(self, query, market="zh-TW", count=5):
         subscription_key = os.getenv('BING_SEARCH_V7_SUBSCRIPTION_KEY')
         search_url = "https://api.bing.microsoft.com/v7.0/search"
         headers = {"Ocp-Apim-Subscription-Key": subscription_key}
-        params = {"q": query, "textDecorations": True, "textFormat": "HTML"}
+        params = {
+            "q": query,
+            "textDecorations": True,
+            "textFormat": "HTML",
+            "mkt": market,  # 指定語言/市場
+            "count": count  # 指定搜尋結果數量
+        }
         response = requests.get(search_url, headers=headers, params=params)
         response.raise_for_status()
         search_results = response.json()
