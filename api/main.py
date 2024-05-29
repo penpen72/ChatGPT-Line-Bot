@@ -106,8 +106,8 @@ def handle_text_message(event):
                 raise Exception(error_message)
             tool_calls = get_tool_calls(response)
             if tool_calls:
-                waiting_msg = TextMessage(text='處理中請稍後...')
-                line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[waiting_msg]))
+                # waiting_msg = TextMessage(text='處理中請稍後...')
+                # line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[waiting_msg]))
                 is_successful, response, error_message = user_model.chat_with_ext_second_response(memory.get(user_id), response,tool_calls,os.getenv('OPENAI_MODEL_ENGINE'))
 
             role, response = get_role_and_content(response)
