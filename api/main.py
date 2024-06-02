@@ -124,7 +124,7 @@ def handle_text_message(event):
                     if not is_successful:
                         raise Exception(error_message)
                     youtube_transcript_reader = YoutubeTranscriptReader(
-                        user_model, os.getenv('OPENAI_MODEL_ENGINE2'))
+                        user_model, os.getenv('OPENAI_MODEL_ENGINE'))
                     is_successful, response, error_message = youtube_transcript_reader.summarize(
                         chunks)
                     if not is_successful:
@@ -135,7 +135,7 @@ def handle_text_message(event):
                     chunks = website.get_content_from_url(url)
                     if len(chunks) == 0:
                         raise Exception('無法撈取此網站文字')
-                    website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE2'))
+                    website_reader = WebsiteReader(user_model,os.getenv('OPENAI_MODEL_ENGINE'))
                     is_successful, response, error_message = website_reader.summarize(
                         chunks)
                     if not is_successful:
