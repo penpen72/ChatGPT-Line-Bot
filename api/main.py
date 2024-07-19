@@ -20,7 +20,7 @@ from src.utils import get_role_and_content,get_tool_calls
 from src.service.youtube import Youtube, YoutubeTranscriptReader
 from src.service.website import Website, WebsiteReader
 from src.mongodb import mongodb
-from datetime import datetime
+from datetime import datetime,timedelta
 
 
 load_dotenv('.env')
@@ -102,7 +102,7 @@ def handle_text_message(event):
             prompt = text[4:].strip()
             user_model = model_management[user_id]
             system_message = memory.system_messages.get(user_id)
-            current_time = datetime.now().strftime("[current_time:%Y-%m-%d %Hh%Mm%Ss]")
+            current_time = (datetime.now()+timedelta(hours=8)).strftime("[current_time:%Y-%m-%d %Hh%Mm%Ss]")
             memory.change_system_message(user_id, f'{current_time} {system_message}')
             memory.append(user_id, 'user', prompt)
             is_successful, response, error_message = user_model.chat_with_ext(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
