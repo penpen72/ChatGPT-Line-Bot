@@ -31,7 +31,7 @@ class Memory(MemoryInterface):
         return self.storage.get(user_id)
 
     def change_system_message(self, user_id, system_message):
-        # self.system_messages[user_id] = system_message
+        self.system_messages[user_id] = system_message
         # self.remove(user_id)
         user_storage=self.storage[user_id]
         for chat in user_storage:
