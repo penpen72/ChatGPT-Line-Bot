@@ -33,11 +33,7 @@ class Memory(MemoryInterface):
     def change_system_message(self, user_id, system_message):
         self.system_messages[user_id] = system_message
         # self.remove(user_id)
-        user_storage=self.storage[user_id]
-        for chat in user_storage:
-            if chat['role']=='system':
-                chat['content']=system_message
-                return None
+   
             
 
     def append(self, user_id: str, role: str, content: str) -> None:
