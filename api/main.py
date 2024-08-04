@@ -190,7 +190,7 @@ def handle_audio_message(event: MessageEvent):
             if not is_successful:
                 raise Exception(error_message)
             memory.append(user_id, 'user', response['text'])
-            is_successful, response, error_message = model_management[user_id].chat_completions(memory.get(user_id), 'gpt-3.5-turbo')
+            is_successful, response, error_message = model_management[user_id].chat_completions(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
             if not is_successful:
                 raise Exception(error_message)
             role, response = get_role_and_content(response)
@@ -223,7 +223,7 @@ def handle_image_message(event: MessageEvent):
         if not model_management.get(user_id):
             raise ValueError('Invalid API token')
         else:
-            is_successful, response, error_message = model_management[user_id].image_recognition(image_data, 'gpt-4o')
+            is_successful, response, error_message = model_management[user_id].image_recognition(image_data, os.getenv('OPENAI_MODEL_ENGINE'))
             if not is_successful:
                 raise Exception(error_message)
             role, response = get_role_and_content(response)
