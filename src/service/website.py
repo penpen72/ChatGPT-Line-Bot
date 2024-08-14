@@ -87,6 +87,9 @@ class Website:
             'www.businessweekly.com.tw': {
                 'headers': DEFAULT_HEADER,
                 'selector': ('div', {'class': 'Single-article WebContent'}),
+            },
+            'tw.nextapple.com':{
+                'selector': ('div', {'class': 'post-content'})
             }
             
         }
