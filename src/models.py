@@ -83,12 +83,12 @@ class OpenAIModel(ModelInterface):
                             "type": "image_url",
                             "image_url": {
                                 "url": f'data:image/jpeg;base64,{image_data}',
-                                "detail": "low" # low, high, or auto
+                                # "detail": "low" # low, high, or auto
                             }
                         },
                         {
                             "type": "text",
-                            "text": "詳細觀察這張圖片上面的所有東西。說明這張圖片上有什麼或是這張圖片再說什麼；如果你覺得他是個meme，說明他想傳達的情境，如果不是就不用特別說明"
+                            "text": "仔細觀察圖片上面的所有細節包含文字。詳細描述圖片上的內容並說明；如果你覺得他是個meme，說明他想傳達的情境，如果不是就不用特別說明"
                             
                         }
                     ]
