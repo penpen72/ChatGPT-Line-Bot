@@ -218,12 +218,28 @@ def handle_image_message(event: MessageEvent):
         model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
     image_content = blob_api.get_message_content(event.message.id)
     image_data = base64.b64encode(image_content).decode('utf-8')
+    user_content =  [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f'data:image/jpeg;base64,{image_data}',
+                                # "detail": "low" # low, high, or auto
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "仔細觀察圖片上面的所有細節包含文字。詳細描述圖片上的內容並說明；如果你覺得他是個meme，說明他想傳達的情境，如果不是就不用特別說明"
+                            
+                        }
+                    ]
+    memory.append(user_id, 'user', user_content)
 
     try:
         if not model_management.get(user_id):
             raise ValueError('Invalid API token')
         else:
-            is_successful, response, error_message = model_management[user_id].image_recognition(image_data, os.getenv('OPENAI_MODEL_ENGINE'))
+            # is_successful, response, error_message = model_management[user_id].image_recognition(image_data, os.getenv('OPENAI_MODEL_ENGINE'))
+            is_successful, response, error_message = model_management[user_id].chat_completions(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
             if not is_successful:
                 raise Exception(error_message)
             role, response = get_role_and_content(response)
