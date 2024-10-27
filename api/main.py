@@ -35,6 +35,7 @@ youtube = Youtube()
 website = Website()
 
 memory = Memory(system_message=os.getenv('SYSTEM_MESSAGE'),memory_message_count=20)
+image_detail = system_message=os.getenv('IMAGE_DETAIL') or 'low' # low, high, or auto
 model_management = {}
 api_keys = {}
 
@@ -223,7 +224,7 @@ def handle_image_message(event: MessageEvent):
                             "type": "image_url",
                             "image_url": {
                                 "url": f'data:image/jpeg;base64,{image_data}',
-                                "detail": "low" # low, high, or auto
+                                "detail": image_detail # low, high, or auto
                             }
                         },
                         {
