@@ -5,15 +5,14 @@ from bs4 import BeautifulSoup
 
 WEBSITE_SYSTEM_MESSAGE = "你現在非常擅於做資料的整理、總結、歸納、統整，並能專注於細節、且能提出觀點"
 WEBSITE_MESSAGE_FORMAT = """
-    針對這個連結的內容：
     \"\"\"
     {}
     \"\"\"
 
-    根據上面文章分析，並用簡潔明瞭的方式回答下問題：
-    1. 文章的主題為何？
-    2. 文章的重點為何？(至少100字,但不超過350字)
-    3. 根據文章內容總結來說想表達什麼？(至少100字,但不超過200字)
+    上面是一個網頁文字處理結果，請根據網頁內容進行分析並用簡潔明瞭的方式回答下問題：
+    1. 網頁的主題為何？
+    2. 網頁的重點為何？(至少100字,但不超過350字)
+    3. 根據內容總結想表達什麼？(至少100字,但不超過200字)
     4. 關鍵字有哪些?(至少3個)
     
     
@@ -177,7 +176,7 @@ class WebsiteReader:
         self.message_format = os.getenv(
             'WEBSITE_MESSAGE_FORMAT') or WEBSITE_MESSAGE_FORMAT
         self.model = model
-        self.text_length_limit = 8000
+        self.text_length_limit = 12000
         self.model_engine = model_engine
 
     def send_msg(self, msg):
