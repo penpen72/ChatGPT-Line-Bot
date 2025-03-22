@@ -16,7 +16,7 @@ PART_MESSAGE_FORMAT = """ PART {} START\n下面是一個 Youtube 影片的部分
 WHOLE_MESSAGE_FORMAT = ("下面是每一個部分的小結論：\"\"\"{}\"\"\" \n\n "
                       "請給我全部小結論的總結，字數約 250 字左右")
 SINGLE_MESSAGE_FORMAT = ("下面是一個 Youtube 影片的字幕： \"\"\"{}\"\"\" "
-                         "\n\n請總結出這部影片的重點與一些細節，字數約 250 字左右")
+                         "\n\n請總結出這部影片的重點與一些細節，字數約 400 字左右")
 
 
 class Youtube:
