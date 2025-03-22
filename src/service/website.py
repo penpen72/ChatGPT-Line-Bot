@@ -176,7 +176,7 @@ class WebsiteReader:
         self.message_format = os.getenv(
             'WEBSITE_MESSAGE_FORMAT') or WEBSITE_MESSAGE_FORMAT
         self.model = model
-        self.text_length_limit = 12000
+        self.text_length_limit = 24000
         self.model_engine = model_engine
 
     def send_msg(self, msg):

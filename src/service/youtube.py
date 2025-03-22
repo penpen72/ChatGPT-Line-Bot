@@ -25,7 +25,7 @@ class Youtube:
         :param step: 用來控制每隔多少行字幕取一次，可用於減少無用字幕量
         """
         self.step = step
-        self.chunk_size = 8000
+        self.chunk_size = 24000
         # 如果需要使用代理則在環境變數中指定 PROXY_URL
         self.proxy_url = os.getenv("PROXY_URL")
         self.proxy_config = None
