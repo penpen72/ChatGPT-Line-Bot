@@ -9,18 +9,12 @@ WEBSITE_MESSAGE_FORMAT = """
     {}
     \"\"\"
 
-    上面是一個網頁文字處理結果，請根據網頁內容進行分析並用簡潔明瞭的方式回答下問題：
+    上面是一個網頁文字處理結果，請根據網頁內容進行分析並用簡潔明瞭的方式回答(至少100字,但不超過400字)：
     1. 網頁的主題為何？
-    2. 網頁的重點為何？(至少100字,但不超過350字)
-    3. 根據內容總結想表達什麼？(至少100字,但不超過200字)
+    2. 網頁的重點為何？
+    3. 根據內容總結想表達什麼？
     4. 關鍵字有哪些?(至少3個)
     
-    
-    你需要回傳的格式是：
-    - 主題： '...'
-    - 重點： '...'
-    - 總結： '...'
-    - 關鍵字: '...'
 """
 DEFAULT_HEADER={'User-Agent': r'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0',}
 DEFAULT_SELECTOR=('div', {'class': 'content'})
@@ -176,7 +170,7 @@ class WebsiteReader:
         self.message_format = os.getenv(
             'WEBSITE_MESSAGE_FORMAT') or WEBSITE_MESSAGE_FORMAT
         self.model = model
-        self.text_length_limit = 24000
+        self.text_length_limit = 45000
         self.model_engine = model_engine
 
     def send_msg(self, msg):
