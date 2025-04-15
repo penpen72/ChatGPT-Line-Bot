@@ -14,7 +14,7 @@ YOUTUBE_SYSTEM_MESSAGE = ("你現在非常擅於做資料的整理、總結、�
                           "並能專注於細節、且能提出觀點")
 PART_MESSAGE_FORMAT = """ PART {} START\n下面是一個 Youtube 影片的部分字幕： \"\"\"{}\"\"\" \n\n請總結出這部影片的重點與一些細節，字數約 400 字左右\nPART {} END\n"""
 WHOLE_MESSAGE_FORMAT = ("下面是每一個部分的小結論：\"\"\"{}\"\"\" \n\n "
-                      "請給我全部小結論的總結，字數約 250 字左右")
+                      "請給我全部小結論的總結，字數約 400 字左右")
 SINGLE_MESSAGE_FORMAT = ("下面是一個 Youtube 影片的字幕： \"\"\"{}\"\"\" "
                          "\n\n請總結出這部影片的重點與一些細節，字數約 400 字左右")
 
@@ -25,13 +25,13 @@ class Youtube:
         :param step: 用來控制每隔多少行字幕取一次，可用於減少無用字幕量
         """
         self.step = step
-        self.chunk_size = 24000
+        self.chunk_size = 45000
         # 如果需要使用代理則在環境變數中指定 PROXY_URL
         self.proxy_url = os.getenv("PROXY_URL")
         self.proxy_config = None
         if self.proxy_url:
             self.proxy_config = GenericProxyConfig(
-                http_url=self.proxy_url,
+                # http_url=self.proxy_url,
                 https_url=self.proxy_url
             )
 
