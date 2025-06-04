@@ -28,7 +28,7 @@ class Memory(MemoryInterface):
     def _drop_message(self, user_id: str):
         if len(self.storage.get(user_id)) >= (self.memory_message_count + 1) * 2 + 1:
             self.storage[user_id] = [self.storage[user_id][0]] + self.storage[user_id][-(self.memory_message_count * 2):]
-        return self.storage.get(user_id)
+
     def change_system_message(self, user_id, system_message):
         self.system_messages[user_id] = system_message
         # self.remove(user_id)
