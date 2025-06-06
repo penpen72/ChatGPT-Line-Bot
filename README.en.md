@@ -64,6 +64,7 @@ Import the ChatGPT bot to Line and start interacting with it by simply typing te
         5. Set the retry count when fetching YouTube transcripts fails (optional):
             - key: `YT_FETCH_RETRY`
             - value: `3`
+            - Note: the program tries up to three times with a 5-second wait between attempts. If all retries fail, it will show "Unable to fetch transcript, please try again later."
 2. Start running:
     1. Click on `Run` on the top.
     2. After successful, the right-side screen will display `Hello World`, and the **URL** on the top of the screen should be copied down.
