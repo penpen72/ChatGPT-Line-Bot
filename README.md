@@ -61,6 +61,9 @@
         4. Line Channel Access Token:
             - key: `LINE_CHANNEL_ACCESS_TOKEN`
             - value: `[由步驟一取得]`
+        5. 設定 YouTube 字幕擷取失敗時的重試次數（可選）：
+            - key: `YT_FETCH_RETRY`
+            - value: `3`
 2. 開始執行
     1. 點擊上方的 `Run`
     2. 成功後右邊畫面會顯示 `Hello World`，並將畫面中上方的**網址複製**下來

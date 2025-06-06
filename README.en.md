@@ -61,6 +61,9 @@ Import the ChatGPT bot to Line and start interacting with it by simply typing te
         4. Line Channel Access Token:
             - key: `LINE_CHANNEL_ACCESS_TOKEN`
             - value: `[obtained from step one]`
+        5. Set the retry count when fetching YouTube transcripts fails (optional):
+            - key: `YT_FETCH_RETRY`
+            - value: `3`
 2. Start running:
     1. Click on `Run` on the top.
     2. After successful, the right-side screen will display `Hello World`, and the **URL** on the top of the screen should be copied down.

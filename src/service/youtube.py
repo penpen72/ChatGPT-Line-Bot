@@ -1,6 +1,8 @@
 import math
 import os
 import re
+import time
+import xml.etree.ElementTree as ET
 from src.utils import get_role_and_content
 
 from youtube_transcript_api import (
@@ -20,12 +22,13 @@ SINGLE_MESSAGE_FORMAT = ("下面是一個 Youtube 影片的字幕： \"\"\"{}\"\
 
 
 class Youtube:
-    def __init__(self, step=1):
+    def __init__(self, step=1, retries=None):
         """
         :param step: 用來控制每隔多少行字幕取一次，可用於減少無用字幕量
         """
         self.step = step
         self.chunk_size = 45000
+        self.retry_count = int(retries or os.getenv("YT_FETCH_RETRY", "3"))
         # 如果需要使用代理則在環境變數中指定 PROXY_URL
         self.proxy_url = os.getenv("PROXY_URL")
         self.proxy_config = None
@@ -54,15 +57,24 @@ class Youtube:
             ytt_api = YouTubeTranscriptApi(
                 proxy_config=self.proxy_config
             )
-            # 透過 fetch() 取得 FetchedTranscript 物件，再使用 to_raw_data() 取得原始字幕列表
-            fetched_transcript = ytt_api.fetch(
-                video_id,
-                # 可自行調整想要的語言優先順序
-                languages=[
-                    'zh-TW', 'zh', 'zh-CN', 'ja', 'zh-Hant', 'zh-Hans', 'en', 'ko'
-                ],
-                preserve_formatting=self.preserve_formatting
-            )
+            fetched_transcript = None
+            for attempt in range(self.retry_count):
+                try:
+                    # 透過 fetch() 取得 FetchedTranscript 物件，再使用 to_raw_data() 取得原始字幕列表
+                    fetched_transcript = ytt_api.fetch(
+                        video_id,
+                        languages=[
+                            'zh-TW', 'zh', 'zh-CN', 'ja', 'zh-Hant', 'zh-Hans', 'en', 'ko'
+                        ],
+                        preserve_formatting=self.preserve_formatting
+                    )
+                    break
+                except ET.ParseError:
+                    if attempt < self.retry_count - 1:
+                        time.sleep(1)
+                        continue
+                    else:
+                        raise
 
             raw_data = fetched_transcript.to_raw_data()
 
