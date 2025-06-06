@@ -28,7 +28,8 @@ class Youtube:
         """
         self.step = step
         self.chunk_size = 45000
-        self.retry_count = int(retries or os.getenv("YT_FETCH_RETRY", "3"))
+        # 最多僅嘗試三次，並以環境變數或參數指定重試次數
+        self.retry_count = min(int(retries or os.getenv("YT_FETCH_RETRY", "3")), 3)
         # 如果需要使用代理則在環境變數中指定 PROXY_URL
         self.proxy_url = os.getenv("PROXY_URL")
         self.proxy_config = None
@@ -71,10 +72,13 @@ class Youtube:
                     break
                 except ET.ParseError:
                     if attempt < self.retry_count - 1:
-                        time.sleep(1)
+                        time.sleep(5)
                         continue
                     else:
-                        raise
+                        return False, [], '無法取得字幕，請稍後再試'
+
+            if not fetched_transcript:
+                return False, [], '無法取得字幕，請稍後再試'
 
             raw_data = fetched_transcript.to_raw_data()
 
