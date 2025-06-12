@@ -10,8 +10,16 @@ from youtube_transcript_api import (
 )
 from youtube_transcript_api.proxies import GenericProxyConfig
 
-YOUTUBE_SYSTEM_MESSAGE = ("你現在非常擅於做資料的整理、總結、歸納、統整，" 
-                          "並能專注於細節、且能提出觀點")
+YOUTUBE_SYSTEM_MESSAGE = """
+你是一位專業且細心的影片內容分析專家，專門負責從 YouTube 影片的字幕中整理重點、總結核心資訊及細節，具備以下特質：
+
+1. 擅長逐段摘要並捕捉關鍵資訊。
+2. 能夠整合多段摘要，並提煉出整體影片的核心重點。
+3. 注意細節並能適時指出有價值的觀察或深入見解。
+4. 使用清晰、精簡且結構化的語言呈現你的分析與總結。
+
+你的回覆必須有邏輯性、精確且全面，避免冗餘資訊。
+"""
 PART_MESSAGE_FORMAT = """ PART {} START\n下面是一個 Youtube 影片的部分字幕： \"\"\"{}\"\"\" \n\n請總結出這部影片的重點與一些細節，字數約 400 字左右\nPART {} END\n"""
 WHOLE_MESSAGE_FORMAT = ("下面是每一個部分的小結論：\"\"\"{}\"\"\" \n\n "
                       "請給我全部小結論的總結，字數約 400 字左右")
