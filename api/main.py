@@ -34,8 +34,8 @@ storage = None
 youtube = Youtube()
 website = Website()
 
-memory = Memory(system_message=os.getenv('SYSTEM_MESSAGE'),memory_message_count=20)
-image_detail = system_message=os.getenv('IMAGE_DETAIL') or 'low' # low, high, or auto
+memory = Memory(system_message=os.getenv('SYSTEM_MESSAGE'), memory_message_count=20)
+image_detail = os.getenv('IMAGE_DETAIL') or 'low'  # low, high, or auto
 model_management = {}
 api_keys = {}
 
