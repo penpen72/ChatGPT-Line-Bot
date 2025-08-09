@@ -50,7 +50,8 @@ class OpenAIModel(ModelInterface):
         json_body = {
             'model': model_engine,
             'messages': messages,
-            # 'max_tokens':1024,
+            'max_completion_tokens':4096,
+            'verbosity': 'low',
             **kargs
         }
         return self._request('POST', '/chat/completions', body=json_body)
@@ -95,7 +96,7 @@ class OpenAIModel(ModelInterface):
                 }
             ],
             "temperature": 1,
-            "max_tokens": 1024,
+            # "max_tokens": 1024,
             "frequency_penalty": 0,
             "presence_penalty": 0
         }
