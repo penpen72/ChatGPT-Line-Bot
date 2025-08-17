@@ -103,10 +103,8 @@ class OpenAIModel(ModelInterface):
 
         return self._request('POST', '/chat/completions', body=json_body)
 
-    def search_web(self, query, market="zh-TW", count=5):
+    def search_web(self, query):
         """Search the web via Jina Search (Bing deprecated).
-
-        NOTE: `market` param kept for backward compatibility but ignored.
 
         Reference:
             curl "https://s.jina.ai/?q=penguin" \\
@@ -162,7 +160,7 @@ class OpenAIModel(ModelInterface):
             elif isinstance(data, list):
                 candidates = data
 
-            for item in candidates[:count]:
+            for item in candidates:
                 if not isinstance(item, dict):
                     continue
                 title = item.get('title') or item.get('name') or item.get('url') or 'result'
