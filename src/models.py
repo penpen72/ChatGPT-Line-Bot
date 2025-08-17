@@ -104,22 +104,87 @@ class OpenAIModel(ModelInterface):
         return self._request('POST', '/chat/completions', body=json_body)
 
     def search_web(self, query, market="zh-TW", count=5):
-        subscription_key = os.getenv('BING_SEARCH_V7_SUBSCRIPTION_KEY')
-        search_url = "https://api.bing.microsoft.com/v7.0/search"
-        headers = {"Ocp-Apim-Subscription-Key": subscription_key}
-        params = {
-            "q": query,
-            "textDecorations": True,
-            "textFormat": "HTML",
-            "mkt": market,  # 指定語言/市場
-            "count": count  # 指定搜尋結果數量
+        """Search the web via Jina Search (Bing deprecated).
+
+        NOTE: `market` param kept for backward compatibility but ignored.
+
+        Reference:
+            curl "https://s.jina.ai/?q=penguin" \\
+              -H "Accept: application/json" \\
+              -H "Authorization: Bearer <JINA_API_KEY>" \\
+              -H "X-Respond-With: no-content"
+
+        Normalized return shape: list[{'name': str, 'snippet': str, 'url': str}].
+        This matches expectations in chat_with_ext_second_response().
+        """
+        jina_key = os.getenv('JINA_API_KEY', ).strip()
+        # print(f'Jina API Key: {jina_key[:4]}...{jina_key[-4:]}')  # Debugging only, do not log full key
+        base_url = "https://s.jina.ai/"
+        headers = {
+            # Use the key exactly as provided in env (do NOT append or trim characters)
+            "Authorization": f"Bearer {jina_key}" if jina_key else None,
+            # Ensure JSON response
+            "Accept": "application/json",
+            # Request minimal/no extra content (can remove if full content desired)
+            "X-Respond-With": "no-content",
         }
-        response = requests.get(search_url, headers=headers, params=params)
-        response.raise_for_status()
-        search_results = response.json()
-        print(f'{params=}')
-        # print(f'{search_results=}')
-        return search_results["webPages"]["value"]
+        # Drop None headers
+        headers = {k: v for k, v in headers.items() if v is not None}
+        params = {"q": query}
+        try:
+            resp = requests.get(base_url, headers=headers, params=params, timeout=20)
+            resp.raise_for_status()
+        except Exception as e:
+            # Return a single synthetic result on failure
+            return [{
+                'name': query,
+                'snippet': f'Jina search failed: {e}',
+                'url': ''
+            }]
+
+        # Parse documented JSON format first; fallback to plain text
+        results = []
+        try:
+            data = resp.json()
+            candidates = []
+            # Primary key in documented response
+            if isinstance(data, dict):
+                if isinstance(data.get('data'), list):
+                    candidates = data['data']
+                else:
+                    # Fallback alternative keys
+                    for key in ('results', 'items'):
+                        if isinstance(data.get(key), list):
+                            candidates = data[key]
+                            break
+                    if not candidates and any(k in data for k in ('title', 'url', 'description', 'snippet')):
+                        candidates = [data]
+            elif isinstance(data, list):
+                candidates = data
+
+            for item in candidates[:count]:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get('title') or item.get('name') or item.get('url') or 'result'
+                snippet = item.get('description') or item.get('snippet') or ''
+                url = item.get('url') or ''
+                results.append({'name': title, 'snippet': snippet, 'url': url})
+        except ValueError:
+            # Non-JSON response fallback
+            text = resp.text.strip()
+            if text:
+                preview_lines = [l for l in text.splitlines() if l.strip()] or [text]
+                first = preview_lines[0][:80]
+                snippet = text[:200].replace('\n', ' ')
+                results.append({'name': first, 'snippet': snippet, 'url': ''})
+
+        if not results:
+            # Final safety fallback
+            body_preview = (resp.text or '')[:200].replace('\n', ' ')
+            results = [{'name': query, 'snippet': body_preview, 'url': ''}]
+
+        print(f'Jina search params={params} results_count={len(results)}')
+        return results
 
     def chat_with_ext(self, messages, model_engine,**karg):
  
