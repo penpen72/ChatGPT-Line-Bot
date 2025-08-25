@@ -11,13 +11,12 @@ from linebot.v3.webhooks import (MessageEvent, TextMessageContent,
 import os
 import uuid
 import base64
-import json
 
 from src.models import OpenAIModel
 from src.memory import Memory
 # from src.logger import logger
 from src.storage import Storage, FileStorage, MongoStorage
-from src.utils import get_role_and_content,get_tool_calls
+from src.utils import get_role_and_content
 from src.service.youtube import Youtube, YoutubeTranscriptReader
 from src.service.website import Website, WebsiteReader
 from src.mongodb import mongodb
@@ -105,67 +104,19 @@ def handle_text_message(event):
             user_model = model_management[user_id]
             memory.append(user_id, 'user', prompt)
             
-            # 多輪 tool calling 支援
-            max_iterations = 5  # 最大迭代次數，避免無限循環
-            iteration_count = 0
+            # 使用模型的多輪 tool calling 方法
+            is_successful, result, error_message = user_model.chat_with_ext_multi_turn(
+                memory.get(user_id), 
+                os.getenv('OPENAI_MODEL_ENGINE'),
+                max_iterations=5
+            )
             
-            while iteration_count < max_iterations:
-                iteration_count += 1
-                print(f"🔄 Tool calling iteration {iteration_count}/{max_iterations}")
-                
-                current_messages = memory.get(user_id)
-                is_successful, response, error_message = user_model.chat_with_ext(current_messages, os.getenv('OPENAI_MODEL_ENGINE'))
-                if not is_successful:
-                    raise Exception(error_message)
-                
-                tool_calls = get_tool_calls(response)
-                if not tool_calls:
-                    print(f"✅ No tool calls needed. Completed in {iteration_count} iteration(s)")
-                    # 沒有工具調用，直接返回回應
-                    role, response_content = get_role_and_content(response)
-                    memory.append(user_id, role, response_content)
-                    msg = TextMessage(text=response_content)
-                    break
-                
-                print(f"🔧 Found {len(tool_calls)} tool call(s) in iteration {iteration_count}:")
-                for i, tool_call in enumerate(tool_calls):
-                    function_name = tool_call.get('function', {}).get('name', 'unknown')
-                    function_args = tool_call.get('function', {}).get('arguments', '{}')
-                    try:
-                        args_dict = json.loads(function_args)
-                        query = args_dict.get('query', '')[:50] + '...' if len(args_dict.get('query', '')) > 50 else args_dict.get('query', '')
-                        print(f"   {i+1}. {function_name}(query='{query}')")
-                    except:
-                        print(f"   {i+1}. {function_name}")
-                
-                # waiting_msg = TextMessage(text='處理中請稍後...')
-                # line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[waiting_msg]))
-                
-                is_successful, response, error_message = user_model.chat_with_ext_second_response(current_messages, response, tool_calls, os.getenv('OPENAI_MODEL_ENGINE'))
-                if not is_successful:
-                    raise Exception(error_message)
-                    
-                print(f"📝 Tool call results processed for iteration {iteration_count}")
-                
-                # 檢查新的回應是否還包含 tool calls
-                new_tool_calls = get_tool_calls(response)
-                if not new_tool_calls:
-                    print(f"✅ Final response received. Total iterations: {iteration_count}")
-                    role, response_content = get_role_and_content(response)
-                    memory.append(user_id, role, response_content)
-                    msg = TextMessage(text=response_content)
-                    break
-                else:
-                    print(f"🔄 Response contains {len(new_tool_calls)} more tool call(s), continuing...")
+            if not is_successful:
+                raise Exception(error_message)
             
-            if iteration_count >= max_iterations:
-                print(f"⚠️ Reached maximum iterations ({max_iterations}). Stopping tool calling.")
-                # 如果達到最大迭代次數，仍然嘗試獲取最後的回應
-                role, response_content = get_role_and_content(response)
-                memory.append(user_id, role, response_content)
-                msg = TextMessage(text=f"處理完成（達到最大迭代次數 {max_iterations}）：\n{response_content}")
-            
-            print(f"🏁 Tool calling completed. Total iterations: {iteration_count}")
+            # result 是 {'role': role, 'content': content} 格式
+            msg = TextMessage(text=result['content'])
+            memory.append(user_id, result['role'], result['content'])
         else:
             user_model = model_management[user_id]
             memory.append(user_id, 'user', text)

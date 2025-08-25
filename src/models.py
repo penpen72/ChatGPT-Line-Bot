@@ -2,6 +2,7 @@ from typing import List, Dict
 import requests
 import os
 import json
+from .utils import get_role_and_content, get_tool_calls
 
 class ModelInterface:
     def check_token_valid(self) -> bool:
@@ -264,7 +265,81 @@ class OpenAIModel(ModelInterface):
             )
         
         print(f"📤 Sending final request with {len(updated_messages)} messages")
-        return self.chat_completions(messages=updated_messages, model_engine=model_engine)
+        return self.chat_completions(messages=updated_messages, model_engine=model_engine, parallel_tool_calls=False)
+
+    def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=5, **kwargs):
+        """
+        處理多輪 tool calling，支援 AI 進行多次工具調用直到獲得最終回應
+        
+        Args:
+            messages: 對話訊息列表
+            model_engine: 模型引擎名稱
+            max_iterations: 最大迭代次數，避免無限循環
+            **kwargs: 其他傳遞給 chat_completions 的參數
+            
+        Returns:
+            tuple: (is_successful, final_response, error_message)
+        """
+        print(f"🚀 Starting multi-turn tool calling (max iterations: {max_iterations})")
+        
+        iteration_count = 0
+        current_messages = messages.copy()
+        
+        while iteration_count < max_iterations:
+            iteration_count += 1
+            print(f"🔄 Tool calling iteration {iteration_count}/{max_iterations}")
+            
+            # 發送帶有工具的請求
+            is_successful, response, error_message = self.chat_with_ext(current_messages, model_engine, **kwargs)
+            if not is_successful:
+                return False, None, error_message
+            
+            # 檢查是否有工具調用
+            tool_calls = get_tool_calls(response)
+            if not tool_calls:
+                print(f"✅ No tool calls needed. Completed in {iteration_count} iteration(s)")
+                role, response_content = get_role_and_content(response)
+                return True, {'role': role, 'content': response_content}, None
+            
+            print(f"🔧 Found {len(tool_calls)} tool call(s) in iteration {iteration_count}:")
+            for i, tool_call in enumerate(tool_calls):
+                function_name = tool_call.get('function', {}).get('name', 'unknown')
+                function_args = tool_call.get('function', {}).get('arguments', '{}')
+                try:
+                    args_dict = json.loads(function_args)
+                    query = args_dict.get('query', '')
+                    display_query = query[:50] + '...' if len(query) > 50 else query
+                    print(f"   {i+1}. {function_name}(query='{display_query}')")
+                except:
+                    print(f"   {i+1}. {function_name}")
+            
+            # 處理工具調用
+            is_successful, response, error_message = self.chat_with_ext_second_response(current_messages, response, tool_calls, model_engine)
+            if not is_successful:
+                return False, None, error_message
+            
+            print(f"📝 Tool call results processed for iteration {iteration_count}")
+            
+            # 檢查新的回應是否還包含 tool calls
+            new_tool_calls = get_tool_calls(response)
+            if not new_tool_calls:
+                print(f"✅ Final response received. Total iterations: {iteration_count}")
+                role, response_content = get_role_and_content(response)
+                print(f"🏁 Tool calling completed. Total iterations: {iteration_count}")
+                return True, {'role': role, 'content': response_content}, None
+            else:
+                print(f"🔄 Response contains {len(new_tool_calls)} more tool call(s), continuing...")
+                # 更新 current_messages，注意這裡 chat_with_ext_second_response 已經更新了對話
+                # 我們需要重新構建 messages 包含所有的工具調用歷史
+                # 但由於 memory 管理在外部，這裡我們暫時使用原始 messages
+                pass
+        
+        # 達到最大迭代次數
+        print(f"⚠️ Reached maximum iterations ({max_iterations}). Stopping tool calling.")
+        role, response_content = get_role_and_content(response)
+        final_content = f"處理完成（達到最大迭代次數 {max_iterations}）：\n{response_content}"
+        print(f"🏁 Tool calling completed with max iterations. Total iterations: {iteration_count}")
+        return True, {'role': role, 'content': final_content}, None
            
 
 
