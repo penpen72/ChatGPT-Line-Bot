@@ -33,9 +33,13 @@ class OpenAIModel(ModelInterface):
             if method == 'GET':
                 r = requests.get(f'{self.base_url}{endpoint}', headers=self.headers)
             elif method == 'POST':
-                if body:
+                if files:
+                    # For file uploads, don't set Content-Type (let requests handle it)
+                    r = requests.post(f'{self.base_url}{endpoint}', headers=self.headers, files=files)
+                else:
+                    # For JSON data
                     self.headers['Content-Type'] = 'application/json'
-                r = requests.post(f'{self.base_url}{endpoint}', headers=self.headers, json=body, files=files)
+                    r = requests.post(f'{self.base_url}{endpoint}', headers=self.headers, json=body)
             r = r.json()
             if r.get('error'):
                 return False, None, r.get('error', {}).get('message')
@@ -46,22 +50,28 @@ class OpenAIModel(ModelInterface):
     def check_token_valid(self):
         return self._request('GET', '/models')
 
-    def chat_completions(self, messages, model_engine,**kargs) -> str:
+    def chat_completions(self, messages, model_engine, **kwargs) -> str:
         json_body = {
             'model': model_engine,
             'messages': messages,
-            'max_completion_tokens':4096,
+            'max_completion_tokens': 4096,
             'verbosity': 'low',
-            **kargs
+            **kwargs
         }
         return self._request('POST', '/chat/completions', body=json_body)
 
     def audio_transcriptions(self, file_path, model_engine) -> str:
-        files = {
-            'file': open(file_path, 'rb'),
-            'model': (None, model_engine),
-        }
-        return self._request('POST', '/audio/transcriptions', files=files)
+        try:
+            with open(file_path, 'rb') as audio_file:
+                files = {
+                    'file': audio_file,
+                    'model': (None, model_engine),
+                }
+                return self._request('POST', '/audio/transcriptions', files=files)
+        except FileNotFoundError:
+            return False, None, f'找不到檔案: {file_path}'
+        except Exception as e:
+            return False, None, f'讀取音訊檔案時發生錯誤: {str(e)}'
 
     def image_generations(self, prompt: str) -> str:
         json_body = {
@@ -115,19 +125,24 @@ class OpenAIModel(ModelInterface):
         Normalized return shape: list[{'name': str, 'snippet': str, 'url': str}].
         This matches expectations in chat_with_ext_second_response().
         """
-        jina_key = os.getenv('JINA_API_KEY', ).strip()
+        jina_key = os.getenv('JINA_API_KEY', '').strip()
+        if not jina_key:
+            return [{
+                'name': query,
+                'snippet': 'Jina API key not found in environment variables',
+                'url': ''
+            }]
+            
         # print(f'Jina API Key: {jina_key[:4]}...{jina_key[-4:]}')  # Debugging only, do not log full key
         base_url = "https://s.jina.ai/"
         headers = {
             # Use the key exactly as provided in env (do NOT append or trim characters)
-            "Authorization": f"Bearer {jina_key}" if jina_key else None,
+            "Authorization": f"Bearer {jina_key}",
             # Ensure JSON response
             "Accept": "application/json",
             # Request minimal/no extra content (can remove if full content desired)
             "X-Respond-With": "no-content",
         }
-        # Drop None headers
-        headers = {k: v for k, v in headers.items() if v is not None}
         params = {"q": query}
         try:
             resp = requests.get(base_url, headers=headers, params=params, timeout=20)
@@ -184,8 +199,7 @@ class OpenAIModel(ModelInterface):
         print(f'Jina search params={params} results_count={len(results)}')
         return results
 
-    def chat_with_ext(self, messages, model_engine,**karg):
- 
+    def chat_with_ext(self, messages, model_engine, **kwargs):
         tools = [
             {
                 "type": "function",
@@ -206,27 +220,41 @@ class OpenAIModel(ModelInterface):
             }
         ]
         
-        return self.chat_completions(messages=messages, model_engine=model_engine,tools=tools,tool_choice="auto")
+        return self.chat_completions(messages=messages, model_engine=model_engine, tools=tools, tool_choice="auto", **kwargs)
 
-    def chat_with_ext_second_response(self,messages,response,tool_calls,model_engine):
-
-        response_message = response['choices'][0]['message']
-        messages.append(response_message)
+    def chat_with_ext_second_response(self, messages, response, tool_calls, model_engine):
+        # 創建新的 messages 列表，避免修改原始列表
+        updated_messages = messages.copy()
         
-        for tool_call in tool_calls:
+        response_message = response['choices'][0]['message']
+        updated_messages.append(response_message)
+        
+        print(f"🔧 Processing {len(tool_calls)} tool call(s):")
+        
+        for i, tool_call in enumerate(tool_calls):
             function_name = tool_call['function']['name']
-            print(f"using {function_name}")
-            function_to_call = self.available_functions[function_name]
-            # print(f'{function_to_call=}')
             function_args = json.loads(tool_call['function']['arguments'])
-            # print(f'{function_args=}')
-            function_response = function_to_call(query=function_args.get("query"))
-            # print(f'{function_response=}')
+            query = function_args.get("query", "")
+            
+            print(f"   {i+1}. Function: {function_name}")
+            print(f"      Query: {query}")
+            
+            function_to_call = self.available_functions[function_name]
+            function_response = function_to_call(query=query)
+            
+            # 構建搜尋結果摘要
             search_summary = ""
+            result_count = len(function_response) if function_response else 0
+            
             for result in function_response:
                 search_summary += f"- {result['name']}: {result['snippet']} (URL: {result['url']})\n"
-            # print(f'{messages=}')
-            messages.append(
+            
+            print(f"      Results: {result_count} items found")
+            if result_count > 0:
+                print(f"      First result: {function_response[0]['name'][:50]}...")
+            
+            # 添加工具調用結果到 messages
+            updated_messages.append(
                 {
                     "tool_call_id": tool_call['id'],
                     "role": "tool",
@@ -235,8 +263,8 @@ class OpenAIModel(ModelInterface):
                 }
             )
         
-        
-        return self.chat_completions(messages=messages, model_engine=model_engine)
+        print(f"📤 Sending final request with {len(updated_messages)} messages")
+        return self.chat_completions(messages=updated_messages, model_engine=model_engine)
            
 
 

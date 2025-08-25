@@ -11,6 +11,7 @@ from linebot.v3.webhooks import (MessageEvent, TextMessageContent,
 import os
 import uuid
 import base64
+import json
 
 from src.models import OpenAIModel
 from src.memory import Memory
@@ -100,25 +101,71 @@ def handle_text_message(event):
             msg = ImageMessage(original_content_url=url, preview_image_url=url)
             memory.append(user_id, 'assistant', url)
         elif text.lower().startswith('ext'):
-            prompt = text[4:].strip()
+            prompt = text[3:].strip()
             user_model = model_management[user_id]
-            system_message = memory.system_messages.get(user_id)
-            current_time = (datetime.now()+timedelta(hours=8)).strftime("[current_time:%Y-%m-%d %Hh%Mm%Ss]")
-            memory.change_system_message(user_id, f'{current_time} {system_message}')
             memory.append(user_id, 'user', prompt)
-            is_successful, response, error_message = user_model.chat_with_ext(memory.get(user_id), os.getenv('OPENAI_MODEL_ENGINE'))
-            if not is_successful:
-                raise Exception(error_message)
-            tool_calls = get_tool_calls(response)
-            if tool_calls:
+            
+            # 多輪 tool calling 支援
+            max_iterations = 5  # 最大迭代次數，避免無限循環
+            iteration_count = 0
+            
+            while iteration_count < max_iterations:
+                iteration_count += 1
+                print(f"🔄 Tool calling iteration {iteration_count}/{max_iterations}")
+                
+                current_messages = memory.get(user_id)
+                is_successful, response, error_message = user_model.chat_with_ext(current_messages, os.getenv('OPENAI_MODEL_ENGINE'))
+                if not is_successful:
+                    raise Exception(error_message)
+                
+                tool_calls = get_tool_calls(response)
+                if not tool_calls:
+                    print(f"✅ No tool calls needed. Completed in {iteration_count} iteration(s)")
+                    # 沒有工具調用，直接返回回應
+                    role, response_content = get_role_and_content(response)
+                    memory.append(user_id, role, response_content)
+                    msg = TextMessage(text=response_content)
+                    break
+                
+                print(f"🔧 Found {len(tool_calls)} tool call(s) in iteration {iteration_count}:")
+                for i, tool_call in enumerate(tool_calls):
+                    function_name = tool_call.get('function', {}).get('name', 'unknown')
+                    function_args = tool_call.get('function', {}).get('arguments', '{}')
+                    try:
+                        args_dict = json.loads(function_args)
+                        query = args_dict.get('query', '')[:50] + '...' if len(args_dict.get('query', '')) > 50 else args_dict.get('query', '')
+                        print(f"   {i+1}. {function_name}(query='{query}')")
+                    except:
+                        print(f"   {i+1}. {function_name}")
+                
                 # waiting_msg = TextMessage(text='處理中請稍後...')
                 # line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[waiting_msg]))
-                is_successful, response, error_message = user_model.chat_with_ext_second_response(memory.get(user_id), response,tool_calls,os.getenv('OPENAI_MODEL_ENGINE'))
-
-            role, response = get_role_and_content(response)
-            msg = TextMessage(text=response)
-
-            memory.append(user_id, role, response)
+                
+                is_successful, response, error_message = user_model.chat_with_ext_second_response(current_messages, response, tool_calls, os.getenv('OPENAI_MODEL_ENGINE'))
+                if not is_successful:
+                    raise Exception(error_message)
+                    
+                print(f"📝 Tool call results processed for iteration {iteration_count}")
+                
+                # 檢查新的回應是否還包含 tool calls
+                new_tool_calls = get_tool_calls(response)
+                if not new_tool_calls:
+                    print(f"✅ Final response received. Total iterations: {iteration_count}")
+                    role, response_content = get_role_and_content(response)
+                    memory.append(user_id, role, response_content)
+                    msg = TextMessage(text=response_content)
+                    break
+                else:
+                    print(f"🔄 Response contains {len(new_tool_calls)} more tool call(s), continuing...")
+            
+            if iteration_count >= max_iterations:
+                print(f"⚠️ Reached maximum iterations ({max_iterations}). Stopping tool calling.")
+                # 如果達到最大迭代次數，仍然嘗試獲取最後的回應
+                role, response_content = get_role_and_content(response)
+                memory.append(user_id, role, response_content)
+                msg = TextMessage(text=f"處理完成（達到最大迭代次數 {max_iterations}）：\n{response_content}")
+            
+            print(f"🏁 Tool calling completed. Total iterations: {iteration_count}")
         else:
             user_model = model_management[user_id]
             memory.append(user_id, 'user', text)
@@ -162,13 +209,13 @@ def handle_text_message(event):
     #     msg = TextMessage(text='請先註冊 Token，格式為 /註冊')
     except Exception as e:
         memory.remove(user_id)
-        if str(e).startswith('Incorrect API key provided'):
+        error_msg = str(e)
+        if error_msg.startswith('Incorrect API key provided'):
             msg = TextMessage(text='OpenAI API Token 有誤，請重新註冊。')
-        elif str(e).startswith(
-                'That model is currently overloaded with other requests.'):
+        elif 'overloaded' in error_msg.lower():
             msg = TextMessage(text='已超過負荷，請稍後再試')
         else:
-            msg = TextMessage(text=str(e))
+            msg = TextMessage(text=error_msg)
     line_bot_api.reply_message_with_http_info(ReplyMessageRequest(reply_token=event.reply_token, messages=[msg]))
 
 @line_handler.add(MessageEvent, message=AudioMessageContent)
@@ -178,12 +225,13 @@ def handle_audio_message(event: MessageEvent):
         model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
     audio_content = blob_api.get_message_content(event.message.id)
     input_audio_path = f'{str(uuid.uuid4())}.m4a'
-    with open(input_audio_path, 'wb') as fd:
-        # for chunk in audio_content.iter_content():
-        #     fd.write(chunk)
-        fd.write(audio_content)
-
+    
     try:
+        with open(input_audio_path, 'wb') as fd:
+            # for chunk in audio_content.iter_content():
+            #     fd.write(chunk)
+            fd.write(audio_content)
+
         if not model_management.get(user_id):
             raise ValueError('Invalid API token')
         else:
@@ -208,7 +256,11 @@ def handle_audio_message(event: MessageEvent):
             msg = TextMessage(text='OpenAI API Token 有誤，請重新註冊。')
         else:
             msg = TextMessage(text=str(e))
-    os.remove(input_audio_path)
+    finally:
+        # 確保檔案總是被清理
+        if os.path.exists(input_audio_path):
+            os.remove(input_audio_path)
+    
     line_bot_api.reply_message(event.reply_token, msg)
 
 
@@ -219,20 +271,19 @@ def handle_image_message(event: MessageEvent):
         model_management[user_id] = OpenAIModel(api_key=os.getenv('OPENAI_API_KEY'))
     image_content = blob_api.get_message_content(event.message.id)
     image_data = base64.b64encode(image_content).decode('utf-8')
-    user_content =  [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f'data:image/jpeg;base64,{image_data}',
-                                "detail": image_detail # low, high, or auto
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": "仔細觀察圖片上面的所有細節包含文字。詳細描述圖片上的內容並說明；如果你覺得他是個meme，說明他想傳達的情境，如果不是就不用特別說明"
-                            
-                        }
-                    ]
+    user_content = [
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": f'data:image/jpeg;base64,{image_data}',
+                "detail": image_detail  # low, high, or auto
+            }
+        },
+        {
+            "type": "text",
+            "text": "仔細觀察圖片上面的所有細節包含文字。詳細描述圖片上的內容並說明；如果你覺得他是個meme，說明他想傳達的情境，如果不是就不用特別說明"
+        }
+    ]
     memory.append(user_id, 'user', user_content)
 
     try:
