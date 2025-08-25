@@ -219,8 +219,8 @@ class OpenAIModel(ModelInterface):
                 }
             }
         ]
-        
-        return self.chat_completions(messages=messages, model_engine=model_engine, tools=tools, tool_choice="auto", **kwargs)
+
+        return self.chat_completions(messages=messages, model_engine=model_engine, tools=tools, tool_choice="auto", parallel_tool_calls=False, **kwargs)
 
     def chat_with_ext_second_response(self, messages, response, tool_calls, model_engine):
         # 創建新的 messages 列表，避免修改原始列表
