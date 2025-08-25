@@ -206,13 +206,13 @@ class OpenAIModel(ModelInterface):
                 "type": "function",
                 "function": {
                     "name": "search_web",
-                    "description": "Search the web for information",
+                    "description": "Search the web for current information. Use this tool sparingly and only when you need up-to-date information that's not in your training data. Limit to 1-2 searches per conversation unless absolutely necessary. Think carefully before each search - can you answer with existing knowledge first?",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "The search query"
+                                "description": "The search query - be specific and focused to get the most relevant results"
                             }
                         },
                         "required": ["query"]
@@ -267,7 +267,7 @@ class OpenAIModel(ModelInterface):
         print(f"📤 Sending final request with {len(updated_messages)} messages")
         return self.chat_completions(messages=updated_messages, model_engine=model_engine)
 
-    def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=5, **kwargs):
+    def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=5, max_tool_calls=10, **kwargs):
         """
         處理多輪 tool calling，支援 AI 進行多次工具調用直到獲得最終回應
         
@@ -275,14 +275,16 @@ class OpenAIModel(ModelInterface):
             messages: 對話訊息列表
             model_engine: 模型引擎名稱
             max_iterations: 最大迭代次數，避免無限循環
+            max_tool_calls: 最大工具調用總次數，避免過度使用
             **kwargs: 其他傳遞給 chat_completions 的參數
             
         Returns:
             tuple: (is_successful, final_response, error_message)
         """
-        print(f"🚀 Starting multi-turn tool calling (max iterations: {max_iterations})")
+        print(f"🚀 Starting multi-turn tool calling (max iterations: {max_iterations}, max tool calls: {max_tool_calls})")
         
         iteration_count = 0
+        total_tool_calls = 0
         current_messages = messages.copy()
         
         while iteration_count < max_iterations:
@@ -301,7 +303,19 @@ class OpenAIModel(ModelInterface):
                 role, response_content = get_role_and_content(response)
                 return True, {'role': role, 'content': response_content}, None
             
-            print(f"🔧 Found {len(tool_calls)} tool call(s) in iteration {iteration_count}:")
+            # 檢查工具調用次數限制
+            if total_tool_calls + len(tool_calls) > max_tool_calls:
+                print(f"⚠️ Tool call limit reached ({total_tool_calls}/{max_tool_calls}). Stopping to prevent excessive usage.")
+                # 嘗試讓 AI 在沒有工具的情況下給出回應
+                is_successful, response, error_message = self.chat_completions(current_messages, model_engine)
+                if not is_successful:
+                    return False, None, error_message
+                role, response_content = get_role_and_content(response)
+                final_content = f"已達到工具使用限制（{max_tool_calls}次），基於現有資訊回答：\n{response_content}"
+                return True, {'role': role, 'content': final_content}, None
+            
+            total_tool_calls += len(tool_calls)
+            print(f"🔧 Found {len(tool_calls)} tool call(s) in iteration {iteration_count} (total: {total_tool_calls}/{max_tool_calls}):")
             for i, tool_call in enumerate(tool_calls):
                 function_name = tool_call.get('function', {}).get('name', 'unknown')
                 function_args = tool_call.get('function', {}).get('arguments', '{}')
@@ -323,9 +337,9 @@ class OpenAIModel(ModelInterface):
             # 檢查新的回應是否還包含 tool calls
             new_tool_calls = get_tool_calls(response)
             if not new_tool_calls:
-                print(f"✅ Final response received. Total iterations: {iteration_count}")
+                print(f"✅ Final response received. Total iterations: {iteration_count}, Total tool calls: {total_tool_calls}")
                 role, response_content = get_role_and_content(response)
-                print(f"🏁 Tool calling completed. Total iterations: {iteration_count}")
+                print(f"🏁 Tool calling completed. Total iterations: {iteration_count}, Total tool calls: {total_tool_calls}")
                 return True, {'role': role, 'content': response_content}, None
             else:
                 print(f"🔄 Response contains {len(new_tool_calls)} more tool call(s), continuing...")
@@ -338,7 +352,7 @@ class OpenAIModel(ModelInterface):
         print(f"⚠️ Reached maximum iterations ({max_iterations}). Stopping tool calling.")
         role, response_content = get_role_and_content(response)
         final_content = f"處理完成（達到最大迭代次數 {max_iterations}）：\n{response_content}"
-        print(f"🏁 Tool calling completed with max iterations. Total iterations: {iteration_count}")
+        print(f"🏁 Tool calling completed with max iterations. Total iterations: {iteration_count}, Total tool calls: {total_tool_calls}")
         return True, {'role': role, 'content': final_content}, None
            
 

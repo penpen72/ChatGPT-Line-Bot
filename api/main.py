@@ -104,11 +104,12 @@ def handle_text_message(event):
             user_model = model_management[user_id]
             memory.append(user_id, 'user', prompt)
             
-            # 使用模型的多輪 tool calling 方法
+            # 使用模型的多輪 tool calling 方法，設定合理的限制
             is_successful, result, error_message = user_model.chat_with_ext_multi_turn(
                 memory.get(user_id), 
                 os.getenv('OPENAI_MODEL_ENGINE'),
-                max_iterations=5
+                max_iterations=3,  # 減少最大迭代次數
+                max_tool_calls=5   # 限制工具調用總次數
             )
             
             if not is_successful:
