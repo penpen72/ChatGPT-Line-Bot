@@ -265,7 +265,7 @@ class OpenAIModel(ModelInterface):
             )
         
         print(f"📤 Sending final request with {len(updated_messages)} messages")
-        return self.chat_completions(messages=updated_messages, model_engine=model_engine, parallel_tool_calls=False)
+        return self.chat_completions(messages=updated_messages, model_engine=model_engine)
 
     def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=5, **kwargs):
         """
