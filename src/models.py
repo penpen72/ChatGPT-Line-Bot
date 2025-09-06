@@ -267,7 +267,7 @@ class OpenAIModel(ModelInterface):
         print(f"📤 Sending final request with {len(updated_messages)} messages")
         return self.chat_completions(messages=updated_messages, model_engine=model_engine)
 
-    def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=5, max_tool_calls=10, **kwargs):
+    def chat_with_ext_multi_turn(self, messages, model_engine, max_iterations=15, max_tool_calls=10, **kwargs):
         """
         處理多輪 tool calling，支援 AI 進行多次工具調用直到獲得最終回應
         

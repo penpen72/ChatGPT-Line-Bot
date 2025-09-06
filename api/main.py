@@ -108,8 +108,8 @@ def handle_text_message(event):
             is_successful, result, error_message = user_model.chat_with_ext_multi_turn(
                 memory.get(user_id), 
                 os.getenv('OPENAI_MODEL_ENGINE'),
-                max_iterations=3,  # 減少最大迭代次數
-                max_tool_calls=5   # 限制工具調用總次數
+                max_iterations=15,  # 減少最大迭代次數
+                max_tool_calls=5    # 限制工具調用總次數
             )
             
             if not is_successful:
